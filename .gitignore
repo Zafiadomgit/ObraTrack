@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.expo/
+.env
+.env.local
+*.log
+ios/
+android/
+web-build/
+*.zip
+bundle.js
+bundle2.js
+update_artifacts.py
+metro_log.txt

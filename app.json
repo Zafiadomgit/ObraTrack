@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "obra-track",
+    "slug": "obra-track",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/app-logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/app-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zafiadom.obratrack",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/app-logo.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.zafiadom.obratrack"
+    },
+    "web": {
+      "favicon": "./assets/logo-main.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9d127879-b46b-4fcb-82db-de764f127c81"
+      }
+    },
+    "owner": "zafiadom",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9d127879-b46b-4fcb-82db-de764f127c81"
+    },
+    "plugins": [
+      [
+        "@sentry/react-native",
+        {
+          "organization": "zafiadom-org",
+          "project": "obra-track"
+        }
+      ],
+      "expo-font",
+      "@stripe/stripe-react-native"
+    ]
+  }
+}

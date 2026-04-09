@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Returns the Firestore user doc for the caller (used to verify companyId)
+    function callerData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // True if the caller belongs to the given company
+    function belongsToCompany(companyId) {
+      return isAuth() && callerData().companyId == companyId;
+    }
+
+    // True if caller is admin of the given company
+    function isCompanyAdmin(companyId) {
+      return belongsToCompany(companyId) && callerData().role == 'admin';
+    }
+
+    // ─── /users collection ────────────────────────────────────────────────────
+    // Each user can read/write their own doc.
+    // Admins can read/write any user doc that shares their companyId
+    // (required for UserManagementScreen to list and approve users).
+    match /users/{userId} {
+      // Own doc — always accessible
+      allow read, write: if isAuth() && request.auth.uid == userId;
+
+      // Admin of same company can read all members
+      allow read: if isAuth()
+        && callerData().role == 'admin'
+        && resource.data.companyId == callerData().companyId;
+
+      // Admin can update (approve/suspend/change role) any member of same company
+      allow update: if isAuth()
+        && callerData().role == 'admin'
+        && resource.data.companyId == callerData().companyId;
+
+      // Admin can delete members of same company
+      allow delete: if isAuth()
+        && callerData().role == 'admin'
+        && resource.data.companyId == callerData().companyId;
+
+      // Any authenticated user can create a new user doc
+      // (used during self-registration — the doc's uid must match the caller)
+      allow create: if isAuth() && request.auth.uid == userId;
+    }
+
+    // ─── /companies/{companyId}/* — multi-tenant data ─────────────────────────
+    // Any approved member of the company can read/write all subcollections.
+    // Unapproved/pending members are blocked at login (appStore) but we
+    // add a status check here as a server-side safety net.
+    match /companies/{companyId}/{document=**} {
+      allow read, write: if belongsToCompany(companyId)
+        && callerData().status == 'approved';
+    }
+
+    // ─── /companies/{companyId}/projects ──────────────────────────────────────
+    // (Explicit rules for projects subcollection — same allow as above but
+    //  kept explicit for clarity and future fine-grained control.)
+    match /companies/{companyId}/projects/{projectId} {
+      allow read, write: if belongsToCompany(companyId)
+        && callerData().status == 'approved';
+
+      // Nested subcollections inside a project
+      match /{subcollection}/{docId} {
+        allow read, write: if belongsToCompany(companyId)
+          && callerData().status == 'approved';
+      }
+    }
+  }
+}
