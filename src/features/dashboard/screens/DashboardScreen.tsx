@@ -19,7 +19,7 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
     const navigation = propNavigation?.navigate ? propNavigation : hookNavigation;
     const insets = useSafeAreaInsets();
     const user = useAppStore(state => state.user);
-    const { logout } = useAppStore();
+    const { logout, deleteOwnAccount } = useAppStore();
     const allProjects = useProjectStore(state => state.projects);
     const projects = allProjects.filter(p => p.userId === user?.id);
     const allMaterials = useMaterialStore(state => state.materials);
@@ -444,6 +444,32 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                         })}
                     </>
                 )}
+
+                {/* ── Eliminar cuenta ── */}
+                <TouchableOpacity
+                    style={{ marginHorizontal: SPACING.lg, marginTop: SPACING.xl, marginBottom: SPACING.lg, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.danger + '50', alignItems: 'center' }}
+                    onPress={() => {
+                        Alert.alert(
+                            'Eliminar mi cuenta',
+                            'Esta acción es permanente e irreversible. Se eliminarán tu cuenta y todos tus datos. ¿Estás seguro?',
+                            [
+                                { text: 'Cancelar', style: 'cancel' },
+                                {
+                                    text: 'Eliminar definitivamente',
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                        const result = await deleteOwnAccount();
+                                        if (!result.success) {
+                                            Alert.alert('Error', result.reason || 'No se pudo eliminar la cuenta.');
+                                        }
+                                    },
+                                },
+                            ]
+                        );
+                    }}
+                >
+                    <Text style={{ color: COLORS.danger, fontSize: FONTS.sizes.sm, fontWeight: 'bold' }}>Eliminar mi cuenta</Text>
+                </TouchableOpacity>
 
                 {/* ── Create Crew Modal ── */}
                 <Modal visible={crewModalVisible} transparent animationType="slide">

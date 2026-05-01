@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { auth, db, secondaryAuth } from '../config/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence, deleteUser as deleteFirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 export type UserRole = 'admin' | 'coordinador' | 'lider' | 'conductor' | 'logistica';
@@ -29,6 +29,7 @@ interface AppState {
     updateUser: (id: string, data: Partial<User>) => Promise<void>;
     deleteUser: (id: string) => Promise<void>;
     logout: () => Promise<void>;
+    deleteOwnAccount: () => Promise<{ success: boolean; reason?: string }>;
     completeOnboarding: () => Promise<void>;
     upgradeToPro: () => Promise<void>;
 }
@@ -205,5 +206,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     logout: async () => {
         await signOut(auth);
         set({ user: null });
+    },
+
+    deleteOwnAccount: async () => {
+        const current = get().user;
+        if (!current) return { success: false, reason: 'No hay sesión activa.' };
+        try {
+            await deleteDoc(doc(db, 'users', current.id));
+            const firebaseUser = auth.currentUser;
+            if (firebaseUser) await deleteFirebaseUser(firebaseUser);
+            set({ user: null });
+            return { success: true };
+        } catch (error: any) {
+            if (error.code === 'auth/requires-recent-login') {
+                return { success: false, reason: 'Por seguridad, vuelve a iniciar sesión y luego elimina tu cuenta.' };
+            }
+            return { success: false, reason: 'Error al eliminar la cuenta: ' + error.message };
+        }
     },
 }));

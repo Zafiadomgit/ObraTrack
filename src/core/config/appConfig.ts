@@ -8,5 +8,5 @@ export const APP_LIMITS = {
 
 export const APP_CONFIG = {
     version: '1.0.0',
-    environment: 'development'
+    environment: 'production'
 };
