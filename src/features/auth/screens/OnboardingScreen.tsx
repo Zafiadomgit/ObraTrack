@@ -6,39 +6,28 @@ import { useAppStore } from '../../../store/appStore';
 import { useMaterialStore } from '../../materials/store/materialStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
+import { useT } from '../../../core/i18n';
 
 const { width } = Dimensions.get('window');
-
-const ONBOARDING_STEPS = [
-    {
-        title: "Tu Empresa Centralizada",
-        desc: "ObraTrack es una plataforma Multi-Tenant. Crea tu empresa o únete a una existente mediante un código único para mantener la información en un solo lugar seguro.",
-        icon: "briefcase" as const
-    },
-    {
-        title: "Control Total de Proyectos",
-        desc: "Asigna personal a diferentes cuadrillas y gestiona costos de materiales estandarizados, equipos y bitácoras diarias fácilmente.",
-        icon: "clipboard" as const
-    },
-    {
-        title: "Logística y Despachos",
-        desc: "Gestiona transportes en tiempo real. Los conductores y logística pueden reportar entregas y novedades directamente desde la app móvil.",
-        icon: "truck" as const
-    }
-];
 
 export default function OnboardingScreen() {
     const [step, setStep] = useState(0);
     const navigation = useNavigation<any>();
+    const t = useT();
     const completeOnboarding = useAppStore(state => state.completeOnboarding);
     const currentUser = useAppStore(state => state.user);
     const initializeCentralWarehouse = useMaterialStore(state => state.initializeCentralWarehouse);
+
+    const ONBOARDING_STEPS = [
+        { title: t.onboarding1Title, desc: t.onboarding1Desc, icon: 'briefcase' as const },
+        { title: t.onboarding2Title, desc: t.onboarding2Desc, icon: 'clipboard' as const },
+        { title: t.onboarding3Title, desc: t.onboarding3Desc, icon: 'truck' as const },
+    ];
 
     const handleNext = async () => {
         if (step < ONBOARDING_STEPS.length - 1) {
             setStep(step + 1);
         } else {
-            // Finalize Onboarding
             await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
             if (currentUser) {
                 await initializeCentralWarehouse(currentUser.id, currentUser.companyId || 'default-company');
@@ -66,8 +55,8 @@ export default function OnboardingScreen() {
             </View>
 
             <TouchableOpacity style={styles.btn} onPress={handleNext}>
-                <Text style={styles.btnText}>{step === ONBOARDING_STEPS.length - 1 ? 'Comenzar a usar la app' : 'Siguiente'}</Text>
-                <Icon name={step === ONBOARDING_STEPS.length - 1 ? "check" : "chevron-right"} size={20} color={COLORS.white} />
+                <Text style={styles.btnText}>{step === ONBOARDING_STEPS.length - 1 ? t.getStarted : t.next}</Text>
+                <Icon name={step === ONBOARDING_STEPS.length - 1 ? 'check' : 'chevron-right'} size={20} color={COLORS.white} />
             </TouchableOpacity>
         </View>
     );

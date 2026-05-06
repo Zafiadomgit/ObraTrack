@@ -5,10 +5,12 @@ import { useAppStore, UserRole } from '../../../store/appStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
 import { analytics } from '../../../core/services/analyticsService';
+import { useT } from '../../../core/i18n';
 
 export default function RegisterScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
+    const t = useT();
     const registerUser = useAppStore(state => state.registerUser);
     const registerCompany = useAppStore(state => state.registerCompany);
 

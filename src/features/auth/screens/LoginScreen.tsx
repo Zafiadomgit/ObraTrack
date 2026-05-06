@@ -8,10 +8,12 @@ import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useT } from '../../../core/i18n';
 
 export default function LoginScreen() {
     const navigation = useNavigation();
     const login = useAppStore(state => state.login);
+    const t = useT();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -39,10 +41,10 @@ export default function LoginScreen() {
                 await AsyncStorage.setItem('biometricEnabled', 'true');
                 analytics.trackLogin('email');
             } else {
-                alert(result.reason || 'Error al iniciar sesión');
+                alert(result.reason || t.error);
             }
         } else {
-            alert('Ingresa email y contraseña');
+            alert(t.enterEmailAndPassword);
         }
     };
 
@@ -52,21 +54,21 @@ export default function LoginScreen() {
             const isEnrolled = await LocalAuthentication.isEnrolledAsync();
             if (hasHardware && isEnrolled) {
                 const result = await LocalAuthentication.authenticateAsync({
-                    promptMessage: 'Autenticación requerida para ingresar a ObraTrack',
-                    fallbackLabel: 'Usar contraseña'
+                    promptMessage: t.biometricRequired,
+                    fallbackLabel: t.usePassword,
                 });
                 if (result.success) {
                     const authResult = await login('biometric@obratrack.com', 'biometric_token');
                     if (!authResult.success) {
-                        alert(authResult.reason || 'Error en autenticación biométrica');
+                        alert(authResult.reason || t.biometricError);
                     }
                 }
             } else {
-                alert('La autenticación biométrica no está configurada en este dispositivo.');
+                alert(t.biometricNotConfigured);
             }
         } catch (error) {
             console.error(error);
-            alert('Error al intentar autenticar.');
+            alert(t.biometricError);
         }
     };
 
@@ -79,7 +81,7 @@ export default function LoginScreen() {
                 <View style={styles.logoContainer}>
                     <Image source={require('../../../../assets/logo-main.png')} style={styles.logoImage} />
                     <Text style={styles.logoText}>OBRA<Text style={styles.logoTextAccent}>TRACK</Text></Text>
-                    <Text style={styles.subtitle}>Gestión de proyectos para ingenieros</Text>
+                    <Text style={styles.subtitle}>{t.appTagline}</Text>
                 </View>
 
                 <View style={styles.formContainer}>
@@ -87,7 +89,7 @@ export default function LoginScreen() {
                         <Icon name="mail" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Correo electrónico"
+                            placeholder={t.email}
                             placeholderTextColor={COLORS.textMuted}
                             value={email}
                             onChangeText={setEmail}
@@ -100,7 +102,7 @@ export default function LoginScreen() {
                         <Icon name="lock" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Contraseña"
+                            placeholder={t.password}
                             placeholderTextColor={COLORS.textMuted}
                             value={password}
                             onChangeText={setPassword}
@@ -112,27 +114,27 @@ export default function LoginScreen() {
                     </View>
 
                     <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-                        <Text style={styles.loginText}>Ingresar</Text>
+                        <Text style={styles.loginText}>{t.signIn}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.forgotBtn} onPress={() => (navigation as any).navigate('ForgotPassword')}>
-                        <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+                        <Text style={styles.forgotText}>{t.forgotPassword}</Text>
                     </TouchableOpacity>
 
                     {hasLoggedInBefore && (
                         <TouchableOpacity style={styles.biometricBtn} onPress={handleBiometricAuth}>
                             <Ionicons name="finger-print" size={24} color={COLORS.primary} />
-                            <Text style={styles.biometricText}>Ingresar con Huella / FaceID</Text>
+                            <Text style={styles.biometricText}>{t.biometricSignIn}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>¿No tienes cuenta? </Text>
-                    <TouchableOpacity onPress={() => (navigation as any).navigate('Register')}><Text style={styles.footerLink}>Regístrate</Text></TouchableOpacity>
+                    <Text style={styles.footerText}>{t.noAccount} </Text>
+                    <TouchableOpacity onPress={() => (navigation as any).navigate('Register')}><Text style={styles.footerLink}>{t.register}</Text></TouchableOpacity>
                 </View>
                 <TouchableOpacity style={{ alignItems: 'center', marginTop: SPACING.md }} onPress={() => (navigation as any).navigate('PrivacyPolicy')}>
-                    <Text style={{ color: COLORS.textMuted, fontSize: 11 }}>Política de Privacidad</Text>
+                    <Text style={{ color: COLORS.textMuted, fontSize: 11 }}>{t.privacyPolicy}</Text>
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>

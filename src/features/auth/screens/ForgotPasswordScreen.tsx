@@ -5,17 +5,19 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../../config/firebase';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
+import { useT } from '../../../core/i18n';
 
 export default function ForgotPasswordScreen() {
     const navigation = useNavigation<any>();
+    const t = useT();
     const [email, setEmail] = useState('');
     const [sent, setSent] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleReset = async () => {
         if (!email.trim()) {
-            if (Platform.OS === 'web') window.alert('Ingresa tu correo electrónico.');
-            else Alert.alert('Error', 'Ingresa tu correo electrónico.');
+            if (Platform.OS === 'web') window.alert(t.enterYourEmail);
+            else Alert.alert(t.error, t.enterYourEmail);
             return;
         }
         setLoading(true);
@@ -23,11 +25,9 @@ export default function ForgotPasswordScreen() {
             await sendPasswordResetEmail(auth, email.trim());
             setSent(true);
         } catch (error: any) {
-            const msg = error.code === 'auth/user-not-found'
-                ? 'No existe una cuenta con ese correo.'
-                : 'Error al enviar el correo. Verifica la dirección.';
+            const msg = error.code === 'auth/user-not-found' ? t.emailNotFound : t.emailSendError;
             if (Platform.OS === 'web') window.alert(msg);
-            else Alert.alert('Error', msg);
+            else Alert.alert(t.error, msg);
         } finally {
             setLoading(false);
         }
@@ -45,16 +45,14 @@ export default function ForgotPasswordScreen() {
 
                 {!sent ? (
                     <>
-                        <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
-                        <Text style={styles.subtitle}>
-                            Ingresa tu correo y te enviaremos un enlace para restablecerla.
-                        </Text>
+                        <Text style={styles.title}>{t.forgotPasswordTitle}</Text>
+                        <Text style={styles.subtitle}>{t.forgotPasswordSubtitle}</Text>
 
                         <View style={styles.inputGroup}>
                             <Icon name="mail" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Correo electrónico"
+                                placeholder={t.email}
                                 placeholderTextColor={COLORS.textMuted}
                                 value={email}
                                 onChangeText={setEmail}
@@ -70,20 +68,17 @@ export default function ForgotPasswordScreen() {
                             disabled={loading}
                         >
                             <Text style={styles.btnText}>
-                                {loading ? 'Enviando...' : 'Enviar enlace de recuperación'}
+                                {loading ? t.sending : t.sendRecoveryLink}
                             </Text>
                         </TouchableOpacity>
                     </>
                 ) : (
                     <View style={styles.successContainer}>
                         <Icon name="check-circle" size={56} color={COLORS.success} />
-                        <Text style={styles.title}>¡Correo enviado!</Text>
-                        <Text style={styles.subtitle}>
-                            Revisa tu bandeja de entrada (y spam) en {email}.{'\n\n'}
-                            Sigue las instrucciones del correo para crear una nueva contraseña.
-                        </Text>
+                        <Text style={styles.title}>{t.emailSent}</Text>
+                        <Text style={styles.subtitle}>{t.emailSentMessage(email)}</Text>
                         <TouchableOpacity style={styles.btn} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Login' as never)}>
-                            <Text style={styles.btnText}>Volver al inicio de sesión</Text>
+                            <Text style={styles.btnText}>{t.backToSignIn}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
