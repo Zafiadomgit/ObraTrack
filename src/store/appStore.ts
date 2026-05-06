@@ -60,19 +60,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                     return { success: false, reason: 'Tu cuenta está pendiente de aprobación por el Administrador.' };
                 }
             } else {
-                // If it's a new firebase user without firestore doc
-                if (email === 'admin@obratrack.com') {
-                    const adminUser: User = {
-                        id: uid, nombre: 'Administrador Supremo', email,
-                        role: 'superAdmin' as any, plan: 'premium', status: 'approved',
-                        fechaRegistro: today(), hasCompletedOnboarding: true,
-                        companyId: 'default-company'
-                    };
-                    await setDoc(doc(db, 'users', uid), adminUser);
-                    set({ user: adminUser });
-                    return { success: true };
-                }
-                return { success: false, reason: 'Usuario no encontrado en la base de datos de roles.' };
+                await signOut(auth);
+                return { success: false, reason: 'Usuario no encontrado. Por favor regístrate primero.' };
             }
         } catch (error: any) {
             let reason = 'Error de autenticación: ' + error.message;
@@ -146,7 +135,6 @@ export const useAppStore = create<AppState>((set, get) => ({
                 uid = credential.user.uid;
             }
 
-            const isAdminUser = email.toLowerCase() === 'admin@obratrack.com';
             const newUser: User = {
                 id: uid,
                 companyId,
@@ -154,16 +142,16 @@ export const useAppStore = create<AppState>((set, get) => ({
                 cedula,
                 ...(telefono ? { telefono } : {}),
                 email,
-                role: isAdminUser ? ('superAdmin' as any) : role,
-                status: (isAdminUser || forceApprove) ? 'approved' : 'pending',
+                role,
+                status: forceApprove ? 'approved' : 'pending',
                 plan: 'free',
                 fechaRegistro: today(),
                 hasCompletedOnboarding: false,
             };
 
             await setDoc(doc(db, 'users', uid), newUser);
-            
-            if (!forceApprove && !isAdminUser) {
+
+            if (!forceApprove) {
                 // Empleado que se auto-registra queda PENDIENTE. Cerrar sesión.
                 await signOut(auth);
             }

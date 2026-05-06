@@ -5,10 +5,12 @@ import { useAppStore, UserRole } from '../../../store/appStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
 import { analytics } from '../../../core/services/analyticsService';
+import { useT } from '../../../core/i18n';
 
 export default function RegisterScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
+    const t = useT();
     const registerUser = useAppStore(state => state.registerUser);
     const registerCompany = useAppStore(state => state.registerCompany);
 
@@ -39,44 +41,43 @@ export default function RegisterScreen() {
 
     const handleRegister = async () => {
         if (!nombre || !email || !password || !confirmPassword || !cedula) {
-            showAlert('Campos Incompletos', 'Por favor, llena todos los campos, incluyendo tu cédula.');
+            showAlert(t.incompleteFields, t.fillAllFields);
             return;
         }
         if (password !== confirmPassword) {
-            showAlert('Error', 'Las contraseñas no coinciden.');
+            showAlert(t.error, t.passwordsNoMatch);
             return;
         }
         if (password.length < 6) {
-            showAlert('Error', 'La contraseña debe tener al menos 6 caracteres.');
+            showAlert(t.error, t.passwordTooShort);
             return;
         }
 
         if (mode === 'create_company') {
             if (!companyName) {
-                showAlert('Falta Empresa', 'Ingresa el nombre de tu empresa para crear la cuenta.');
+                showAlert(t.missingCompany, t.enterCompanyName);
                 return;
             }
             const selectedPlan = route.params?.selectedPlan || 'free';
             const result = await registerCompany(nombre, email, password, cedula, companyName, selectedPlan);
             if (result.success) {
                 analytics.trackSignUp('admin');
-                showAlert('Empresa Creada', '¡Bienvenido! Tu cuenta de administrador ha sido creada exitosamente.');
-                // Note: The appStore auto-logs in the user and auth state will change handling navigation automatically
+                showAlert(t.companyCreated, t.welcomeAdmin);
             } else {
-                showAlert('Error', result.reason || 'Hubo un problema al crear la cuenta.');
+                showAlert(t.error, result.reason || t.registerError);
             }
         } else {
             if (!companyCode) {
-                showAlert('Falta Código', 'Ingresa el código que te proporcionó el administrador.');
+                showAlert(t.missingCode, t.enterCompanyCode);
                 return;
             }
             const result = await registerUser(nombre, email, password, cedula, selectedRole, false, '', companyCode);
             if (result.success) {
                 analytics.trackSignUp(selectedRole);
                 showAlert(
-                    'Solicitud Enviada',
-                    `Tu solicitud como ${selectedRole} ha sido enviada. El administrador debe aprobarte antes de que puedas iniciar sesión.`,
-                    [{ text: 'Entendido', onPress: () => {
+                    t.requestSent,
+                    t.requestSentMessage(selectedRole),
+                    [{ text: t.understood, onPress: () => {
                         if (navigation.canGoBack()) {
                             navigation.goBack();
                         } else {
@@ -86,7 +87,7 @@ export default function RegisterScreen() {
                     }}]
                 );
             } else {
-                showAlert('Error', result.reason || 'Este correo ya está registrado.');
+                showAlert(t.error, result.reason || t.registerError);
             }
         }
     };
@@ -102,8 +103,8 @@ export default function RegisterScreen() {
                         <Icon name="arrow-left" size={24} color={COLORS.textSecondary} />
                     </TouchableOpacity>
                     <Image source={require('../../../../assets/logo-main.png')} style={{ width: 72, height: 72, resizeMode: 'contain', alignSelf: 'center', marginBottom: 8 }} />
-                    <Text style={styles.title}>Crear Cuenta</Text>
-                    <Text style={styles.subtitle}>Únete a ObraTrack y controla tus proyectos.</Text>
+                    <Text style={styles.title}>{t.createAccount}</Text>
+                    <Text style={styles.subtitle}>{t.joinObraTrack}</Text>
                 </View>
 
                 <View style={styles.modeTabs}>
@@ -111,13 +112,13 @@ export default function RegisterScreen() {
                         style={[styles.modeTab, mode === 'create_company' && styles.modeTabActive]} 
                         onPress={() => setMode('create_company')}
                     >
-                        <Text style={[styles.modeTabText, mode === 'create_company' && styles.modeTabTextActive]}>Crear Empresa</Text>
+                        <Text style={[styles.modeTabText, mode === 'create_company' && styles.modeTabTextActive]}>{t.createCompany}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={[styles.modeTab, mode === 'join_company' && styles.modeTabActive]} 
+                    <TouchableOpacity
+                        style={[styles.modeTab, mode === 'join_company' && styles.modeTabActive]}
                         onPress={() => setMode('join_company')}
                     >
-                        <Text style={[styles.modeTabText, mode === 'join_company' && styles.modeTabTextActive]}>Unirme a Empresa</Text>
+                        <Text style={[styles.modeTabText, mode === 'join_company' && styles.modeTabTextActive]}>{t.joinCompany}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -127,7 +128,7 @@ export default function RegisterScreen() {
                             <Icon name="briefcase" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Nombre de la Empresa"
+                                placeholder={t.companyName}
                                 placeholderTextColor={COLORS.textMuted}
                                 value={companyName}
                                 onChangeText={setCompanyName}
@@ -138,7 +139,7 @@ export default function RegisterScreen() {
                             <Icon name="key" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Código de la Empresa (ej. EMP-123U)"
+                                placeholder={t.companyCode}
                                 placeholderTextColor={COLORS.textMuted}
                                 value={companyCode}
                                 onChangeText={setCompanyCode}
@@ -151,7 +152,7 @@ export default function RegisterScreen() {
                         <Icon name="user" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Tu Nombre Completo"
+                            placeholder={t.fullName}
                             placeholderTextColor={COLORS.textMuted}
                             value={nombre}
                             onChangeText={setNombre}
@@ -162,7 +163,7 @@ export default function RegisterScreen() {
                         <Icon name="credit-card" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Cédula"
+                            placeholder={t.idNumber}
                             placeholderTextColor={COLORS.textMuted}
                             value={cedula}
                             onChangeText={setCedula}
@@ -174,7 +175,7 @@ export default function RegisterScreen() {
                         <Icon name="mail" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Correo electrónico"
+                            placeholder={t.email}
                             placeholderTextColor={COLORS.textMuted}
                             value={email}
                             onChangeText={setEmail}
@@ -187,7 +188,7 @@ export default function RegisterScreen() {
                         <Icon name="lock" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Contraseña"
+                            placeholder={t.password}
                             placeholderTextColor={COLORS.textMuted}
                             value={password}
                             onChangeText={setPassword}
@@ -202,7 +203,7 @@ export default function RegisterScreen() {
                         <Icon name="check-circle" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Confirmar Contraseña"
+                            placeholder={t.confirmPassword}
                             placeholderTextColor={COLORS.textMuted}
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
@@ -215,7 +216,7 @@ export default function RegisterScreen() {
 
                     {mode === 'join_company' && (
                         <>
-                            <Text style={styles.label}>Rol de Acceso Solicitado:</Text>
+                            <Text style={styles.label}>{t.requestedRole}</Text>
                             <View style={styles.roleContainer}>
                         {(['coordinador', 'lider', 'logistica', 'conductor'] as UserRole[]).map(r => (
                             <TouchableOpacity
@@ -233,13 +234,13 @@ export default function RegisterScreen() {
                 </View>
 
                 <TouchableOpacity style={styles.registerBtn} onPress={handleRegister}>
-                    <Text style={styles.registerText}>Registrarme</Text>
+                    <Text style={styles.registerText}>{t.signUp}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>¿Ya tienes cuenta? </Text>
+                    <Text style={styles.footerText}>{t.alreadyHaveAccount} </Text>
                     <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Login' as never)}>
-                        <Text style={styles.footerLink}>Ingresa aquí</Text>
+                        <Text style={styles.footerLink}>{t.signInHere}</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

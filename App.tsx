@@ -16,7 +16,7 @@ import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
   dsn: 'https://f4fccf23793bb3c4355e9446a07b678a@o4511107048996864.ingest.us.sentry.io/4511107141795840',
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0.1,
 });
 
 // Screens
@@ -50,7 +50,6 @@ import { useLogisticsStore } from './src/features/logistics/store/logisticsStore
 import { useEquipmentStore } from './src/features/equipment/store/equipmentStore';
 import { useNotificationStore } from './src/features/notifications/store/notificationStore';
 import OfflineBanner from './src/components/OfflineBanner';
-import { StripeProvider } from '@stripe/stripe-react-native';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -161,10 +160,6 @@ function App() {
 
   return (
     <SafeAreaProvider>
-      <StripeProvider
-        publishableKey="pk_test_51TK0xXEkHMaBFEGvFGfrRO64TBQDt5eEUNiX4grqpfBOJf68SFctkYFIbB1ScKuqfkA4wgajH9HXp7BrHUzRXn2o002Yyw0idV"
-        merchantIdentifier="com.zafiadom.obratrack" // required for Apple Pay
-      >
         <OfflineBanner />
         <NavigationContainer>
           <StatusBar style="light" />
@@ -272,7 +267,6 @@ function App() {
           )}
         </Stack.Navigator>
       </NavigationContainer>
-      </StripeProvider>
     </SafeAreaProvider>
   );
 }
