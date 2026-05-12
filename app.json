@@ -60,8 +60,7 @@
           "project": "obra-track"
         }
       ],
-      "expo-font",
-      "react-native-iap"
+      "expo-font"
     ]
   }
 }
