@@ -53,13 +53,6 @@
       "url": "https://u.expo.dev/a789ac5c-af85-4ccc-b732-e10212ab235b"
     },
     "plugins": [
-      [
-        "@sentry/react-native",
-        {
-          "organization": "zafiadom-org",
-          "project": "obra-track"
-        }
-      ],
       "expo-font"
     ]
   }
