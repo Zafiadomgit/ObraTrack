@@ -40,17 +40,9 @@
     "web": {
       "favicon": "./assets/logo-main.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "9d127879-b46b-4fcb-82db-de764f127c81"
-      }
-    },
     "owner": "zafiadom14",
     "runtimeVersion": {
       "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/9d127879-b46b-4fcb-82db-de764f127c81"
     },
     "plugins": [
       [
