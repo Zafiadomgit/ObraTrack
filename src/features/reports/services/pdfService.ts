@@ -5,7 +5,7 @@ import { es } from 'date-fns/locale';
 import { Project } from '../../projects/store/projectStore';
 import { DailyLog } from '../store/reportStore';
 import { Worker } from '../../personnel/store/personnelStore';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Material } from '../../materials/store/materialStore';
 import { logoBase64 } from '../../../core/theme/logoBase64';
 
