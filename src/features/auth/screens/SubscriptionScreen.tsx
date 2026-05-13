@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     Alert, Platform, ActivityIndicator
@@ -89,6 +89,7 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
     const navigation = useNavigation<any>();
     const { user } = useAppStore();
     const [loading, setLoading] = useState<string | null>(null);
+    const [iapReady, setIapReady] = useState(false);
     const currentPlan = (user?.plan as PlanTier) || 'free';
 
     // ─── Inicializar IAP y listeners al montar ────────────────────────────────
@@ -101,6 +102,7 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
         const setup = async () => {
             try {
                 await initConnection();
+                setIapReady(true);
 
                 purchaseUpdateSub = purchaseUpdatedListener(async (purchase: SubscriptionPurchase) => {
                     const receipt = purchase.transactionReceipt;
@@ -162,6 +164,14 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
             return;
         }
 
+        if (!iapReady) {
+            Alert.alert(
+                'Pagos no disponibles',
+                'Las compras dentro de la app solo están disponibles en la versión publicada de Google Play Store.'
+            );
+            return;
+        }
+
         const productId = PLAY_STORE_PRODUCT_IDS[plan];
         setLoading(productId);
 
@@ -172,7 +182,12 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
                 throw new Error('Producto no disponible en este momento. Intenta más tarde.');
             }
 
-            await requestSubscription({ sku: productId });
+            await requestSubscription({
+                sku: productId,
+                ...(Platform.OS === 'android' ? {
+                    subscriptionOffers: [{ sku: productId, offerToken: '' }]
+                } : {}),
+            });
             // El resultado llega por purchaseUpdatedListener
         } catch (error: any) {
             if (error.code !== 'E_USER_CANCELLED') {
@@ -194,9 +209,22 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
             return;
         }
 
+        if (!iapReady) {
+            Alert.alert(
+                'Pagos no disponibles',
+                'Las compras dentro de la app solo están disponibles en la versión publicada de Google Play Store.'
+            );
+            return;
+        }
+
         setLoading(addonId);
         try {
-            await requestSubscription({ sku: addonId });
+            await requestSubscription({
+                sku: addonId,
+                ...(Platform.OS === 'android' ? {
+                    subscriptionOffers: [{ sku: addonId, offerToken: '' }]
+                } : {}),
+            });
         } catch (error: any) {
             if (error.code !== 'E_USER_CANCELLED') {
                 Alert.alert('Error', error.message || 'No se pudo procesar el add-on.');
@@ -477,4 +505,3 @@ const styles = StyleSheet.create({
     addonPrice: { color: COLORS.primary, fontSize: FONTS.sizes.md, fontWeight: 'bold' },
     addonPeriod: { color: COLORS.textMuted, fontSize: FONTS.sizes.xs },
 });
-
