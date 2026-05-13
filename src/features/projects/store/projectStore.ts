@@ -130,7 +130,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
                 throw parsed.error;
             }
 
-            await setDoc(doc(db, `companies/${newProj.companyId}/projects`, id), parsed.data);
+            // Strip undefined fields — Firestore rejects them
+            const firestoreData = Object.fromEntries(
+                Object.entries(parsed.data as Record<string, any>).filter(([, v]) => v !== undefined)
+            );
+            await setDoc(doc(db, `companies/${newProj.companyId}/projects`, id), firestoreData);
             
             set(state => ({ projects: [parsed.data as Project, ...state.projects] }));
             
