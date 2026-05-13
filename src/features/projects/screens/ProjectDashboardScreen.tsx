@@ -1,17 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Feather';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import { useAppStore } from '../../../store/appStore';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_SIZE = (SCREEN_WIDTH - SPACING.lg * 2 - SPACING.md) / 2;
+
 export default function ProjectDashboardScreen({ navigation: propNavigation, route: propRoute }: any) {
     const insets = useSafeAreaInsets();
     const hookNavigation = useNavigation<any>();
     const navigation = propNavigation?.navigate ? propNavigation : hookNavigation;
-    
-    // Fallback to hook if propRoute is empty
+
     const hookRoute = useRoute<any>();
     const route = propRoute?.params ? propRoute : hookRoute;
     const { projectId, projectName } = route.params || {};
@@ -24,62 +26,62 @@ export default function ProjectDashboardScreen({ navigation: propNavigation, rou
             id: 'Bitácora',
             icon: 'book-open' as const,
             title: 'Bitácora',
-            description: 'Diario de obra y actividades',
-            color: COLORS.primary,
+            description: 'Diario de obra',
+            color: '#3B82F6',
             screen: 'Bitácora',
             roles: ['admin', 'coordinador', 'lider'],
-            hideCentral: true
+            hideCentral: true,
         },
         {
             id: 'Personal',
             icon: 'users' as const,
             title: 'Personal',
-            description: 'Control de asistencia y cuadrillas',
-            color: COLORS.success,
+            description: 'Asistencia y roles',
+            color: '#10B981',
             screen: 'Personal',
             roles: ['admin', 'coordinador', 'lider'],
-            hideCentral: true
+            hideCentral: true,
         },
         {
             id: 'Materiales',
             icon: isCentral ? 'package' as const : 'box' as const,
-            title: isCentral ? 'Bodega Central' : 'Materiales',
-            description: 'Inventario y control de stock',
-            color: COLORS.info,
+            title: isCentral ? 'Bodega' : 'Materiales',
+            description: 'Inventario y stock',
+            color: '#6366F1',
             screen: 'Materiales',
             roles: ['admin', 'coordinador', 'lider', 'logistica'],
-            hideCentral: false
+            hideCentral: false,
         },
         {
             id: 'Equipos',
             icon: 'tool' as const,
             title: 'Equipos',
-            description: 'Maquinaria y herramientas',
-            color: '#E67E22',
+            description: 'Maquinaria',
+            color: '#F59E0B',
             screen: 'Equipos',
             roles: ['admin', 'coordinador', 'lider'],
-            hideCentral: false
+            hideCentral: false,
         },
         {
             id: 'Envíos',
             icon: 'truck' as const,
             title: 'Envíos',
-            description: 'Despachos y logística',
-            color: '#9B59B6',
+            description: 'Despachos',
+            color: '#8B5CF6',
             screen: 'Envíos',
             roles: ['admin', 'coordinador', 'logistica'],
-            hideCentral: true
+            hideCentral: true,
         },
         {
             id: 'Reportes',
             icon: 'file-text' as const,
             title: 'Reportes',
-            description: 'Generar PDF, Excel y CSV',
-            color: COLORS.danger,
+            description: 'PDF y Excel',
+            color: '#EF4444',
             screen: 'Reportes',
             roles: ['admin', 'coordinador'],
-            hideCentral: true
-        }
+            hideCentral: true,
+        },
     ];
 
     const filteredMenu = menuItems.filter(item => {
@@ -88,84 +90,100 @@ export default function ProjectDashboardScreen({ navigation: propNavigation, rou
         return true;
     });
 
+    // Pair items into rows of 2
+    const rows: (typeof filteredMenu)[] = [];
+    for (let i = 0; i < filteredMenu.length; i += 2) {
+        rows.push(filteredMenu.slice(i, i + 2));
+    }
+
     return (
-        <View style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + SPACING.lg }]}>
-                <View style={styles.header}>
-                    <Text style={styles.projectName}>{projectName}</Text>
-                    <Text style={styles.projectDesc}>
-                        {isCentral ? 'Gestión de almacén principal' : 'Gestión de proyecto'}
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <Icon name="arrow-left" size={22} color={COLORS.white} />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.projectName} numberOfLines={1}>{projectName}</Text>
+                    <Text style={styles.projectSub}>
+                        {isCentral ? 'Almacén principal' : 'Panel de gestión'}
                     </Text>
                 </View>
+            </View>
 
-                <View style={styles.grid}>
-                    {filteredMenu.map(item => (
-                        <TouchableOpacity
-                            key={item.id}
-                            style={styles.card}
-                            onPress={() => navigation.navigate(item.screen, { projectId, projectName })}
-                            activeOpacity={0.8}
-                        >
-                            <View style={[styles.iconBox, { backgroundColor: item.color + '22' }]}>
-                                <Icon name={item.icon} size={28} color={item.color} />
-                            </View>
-                            <Text style={styles.cardTitle}>{item.title}</Text>
-                            <Text style={styles.cardDesc}>{item.description}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+            >
+                {rows.map((row, rowIdx) => (
+                    <View key={rowIdx} style={styles.row}>
+                        {row.map(item => (
+                            <TouchableOpacity
+                                key={item.id}
+                                style={[styles.card, { width: CARD_SIZE }]}
+                                onPress={() => navigation.navigate(item.screen, { projectId, projectName })}
+                                activeOpacity={0.82}
+                            >
+                                <View style={[styles.iconCircle, { backgroundColor: item.color }]}>
+                                    <Icon name={item.icon} size={26} color={COLORS.white} />
+                                </View>
+                                <Text style={styles.cardTitle}>{item.title}</Text>
+                                <Text style={styles.cardDesc}>{item.description}</Text>
+                                <View style={[styles.cardArrow, { backgroundColor: item.color + '20' }]}>
+                                    <Icon name="arrow-right" size={14} color={item.color} />
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                        {/* Spacer if odd row */}
+                        {row.length === 1 && <View style={{ width: CARD_SIZE }} />}
+                    </View>
+                ))}
             </ScrollView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-    },
-    scrollContent: {
-        padding: SPACING.lg,
-    },
+    container: { flex: 1, backgroundColor: COLORS.background },
+
     header: {
-        marginBottom: SPACING.xl,
-        alignItems: 'center',
-        paddingVertical: SPACING.md,
-    },
-    projectName: {
-        color: COLORS.white,
-        fontSize: FONTS.sizes.xl,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 4,
-    },
-    projectDesc: {
-        color: COLORS.textMuted,
-        fontSize: FONTS.sizes.sm,
-        textAlign: 'center',
-    },
-    grid: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.md,
+        backgroundColor: COLORS.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
         gap: SPACING.md,
     },
+    backBtn: {
+        width: 36, height: 36, borderRadius: 18,
+        backgroundColor: COLORS.surfaceLight,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    projectName: { color: COLORS.white, fontSize: FONTS.sizes.lg, fontWeight: 'bold' },
+    projectSub: { color: COLORS.textMuted, fontSize: FONTS.sizes.xs, marginTop: 2 },
+
+    scrollContent: { padding: SPACING.lg, gap: SPACING.md },
+
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: SPACING.md,
+    },
+
     card: {
-        width: '48%', // Approx half minus gap
         backgroundColor: COLORS.surface,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.xl,
         padding: SPACING.lg,
-        alignItems: 'center',
         borderWidth: 1,
         borderColor: COLORS.border,
-        ...SHADOWS.sm,
+        alignItems: 'flex-start',
+        ...SHADOWS.md,
     },
-    iconBox: {
-        width: 56,
-        height: 56,
-        borderRadius: RADIUS.round,
-        alignItems: 'center',
-        justifyContent: 'center',
+    iconCircle: {
+        width: 52, height: 52, borderRadius: 26,
+        alignItems: 'center', justifyContent: 'center',
         marginBottom: SPACING.md,
     },
     cardTitle: {
@@ -173,12 +191,15 @@ const styles = StyleSheet.create({
         fontSize: FONTS.sizes.md,
         fontWeight: 'bold',
         marginBottom: 4,
-        textAlign: 'center',
     },
     cardDesc: {
         color: COLORS.textMuted,
-        fontSize: 10,
-        textAlign: 'center',
-        lineHeight: 14,
-    }
+        fontSize: FONTS.sizes.xs,
+        lineHeight: 16,
+        marginBottom: SPACING.md,
+    },
+    cardArrow: {
+        width: 28, height: 28, borderRadius: 14,
+        alignItems: 'center', justifyContent: 'center',
+    },
 });
