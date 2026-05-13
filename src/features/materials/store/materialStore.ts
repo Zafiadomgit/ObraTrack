@@ -6,6 +6,16 @@ import { ErrorService } from '../../../core/services/errorService';
 import { ActivityService } from '../../../core/services/activityService';
 import { useAppStore } from '../../../store/appStore';
 
+export interface Supplier {
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    notes?: string;
+    companyId: string;
+    createdAt: number;
+}
+
 export interface MaterialTransaccion {
     tipo: 'entrada' | 'salida' | 'envio' | 'confirmacion';
     cantidad: number;
@@ -40,7 +50,7 @@ export interface Material {
 
 interface MaterialState {
     materials: Material[];
-    suppliers: string[];
+    suppliers: Supplier[];
 
     lastDoc: QueryDocumentSnapshot<any> | null;
     hasMore: boolean;
@@ -58,8 +68,10 @@ interface MaterialState {
     registerMaterialExit: (id: string, currentVersion: number, amount: number, companyId: string, nota?: string) => Promise<void>;
     enviarAObra: (sourceId: string, currentVersion: number, amount: number, targetProjectId: string, companyId: string, nota?: string) => Promise<void>;
     confirmarLlegada: (id: string, currentVersion: number, amount: number, companyId: string, nota?: string) => Promise<void>;
-    addSupplier: (name: string) => Promise<void>;
-    deleteSupplier: (name: string) => Promise<void>;
+    loadSuppliers: (companyId: string) => Promise<void>;
+    addSupplier: (name: string, companyId: string) => Promise<void>;
+    updateSupplier: (id: string, updates: Partial<Supplier>, companyId: string) => Promise<void>;
+    deleteSupplier: (id: string, companyId: string) => Promise<void>;
     restoreCentralCatalog: (userId: string, companyId: string) => Promise<void>;
     initializeCentralWarehouse: (userId: string, companyId: string) => Promise<void>;
 }
@@ -69,7 +81,7 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export const useMaterialStore = create<MaterialState>((set, get) => ({
     materials: [],
-    suppliers: ['Argos', 'Holcim', 'HomeCenter', 'Ferretería Central'],
+    suppliers: [],
     lastDoc: null,
     hasMore: true,
     loading: false,
@@ -382,8 +394,48 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
         }
     },
 
-    addSupplier: async (name) => set((s) => ({ suppliers: s.suppliers.includes(name) ? s.suppliers : [...s.suppliers, name] })),
-    deleteSupplier: async (name) => set((s) => ({ suppliers: s.suppliers.filter(sup => sup !== name) })),
+    loadSuppliers: async (companyId) => {
+        if (!companyId) return;
+        try {
+            const snapshot = await getDocs(collection(db, `companies/${companyId}/suppliers`));
+            const loaded = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) } as Supplier));
+            set({ suppliers: loaded });
+        } catch (error) {
+            ErrorService.handleError(error, 'Load Suppliers');
+        }
+    },
+
+    addSupplier: async (name, companyId) => {
+        if (!companyId) return;
+        try {
+            const id = generateId();
+            const newSupplier: Supplier = { id, name, companyId, createdAt: Date.now() };
+            await setDoc(doc(db, `companies/${companyId}/suppliers`, id), newSupplier);
+            set(s => ({ suppliers: [...s.suppliers, newSupplier] }));
+        } catch (error) {
+            ErrorService.handleError(error, 'Add Supplier');
+        }
+    },
+
+    updateSupplier: async (id, updates, companyId) => {
+        if (!companyId) return;
+        try {
+            await updateDoc(doc(db, `companies/${companyId}/suppliers`, id), updates);
+            set(s => ({ suppliers: s.suppliers.map(sup => sup.id === id ? { ...sup, ...updates } : sup) }));
+        } catch (error) {
+            ErrorService.handleError(error, 'Update Supplier');
+        }
+    },
+
+    deleteSupplier: async (id, companyId) => {
+        if (!companyId) return;
+        try {
+            await deleteDoc(doc(db, `companies/${companyId}/suppliers`, id));
+            set(s => ({ suppliers: s.suppliers.filter(sup => sup.id !== id) }));
+        } catch (error) {
+            ErrorService.handleError(error, 'Delete Supplier');
+        }
+    },
 
     restoreCentralCatalog: async (userId, companyId) => {
         try {
@@ -457,3 +509,4 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
         }
     },
 }));
+
