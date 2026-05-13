@@ -133,9 +133,9 @@ export default function HomeScreen({ navigation: propNavigation }: any) {
                 `Se cargaron ${standardMats.length} materiales estándar. Puedes editarlos en la pestaña Materiales.`,
                 [{ text: 'Entendido' }]
             );
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating project:', error);
-            Alert.alert('Error', 'No se pudo crear el proyecto.');
+            Alert.alert('Error', error?.message || 'No se pudo crear el proyecto.');
         }
     };
 
@@ -415,3 +415,4 @@ const styles = StyleSheet.create({
     confirmBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.md, gap: 6 },
     confirmText: { color: COLORS.white, fontWeight: 'bold' },
 });
+
