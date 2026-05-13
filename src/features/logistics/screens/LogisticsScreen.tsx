@@ -31,7 +31,9 @@ export default function LogisticsScreen() {
     const updateShipmentStatus = useLogisticsStore(state => state.updateShipmentStatus);
     const updateShipmentLocation = useLogisticsStore(state => state.updateShipmentLocation);
 
-    const projects = useProjectStore(state => state.projects).filter(p => currentUser && p.userId === currentUser.id);
+    const projects = useProjectStore(state => state.projects).filter(p =>
+        currentUser && (p.companyId === currentUser.companyId || p.userId === currentUser.id)
+    );
     const addProject = useProjectStore(state => state.addProject);
     const allMaterials = useMaterialStore(state => state.materials).filter(m => currentUser && m.userId === currentUser.id);
 
