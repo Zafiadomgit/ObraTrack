@@ -4,6 +4,7 @@
     "slug": "obra-track",
     "version": "1.0.0",
     "orientation": "portrait",
+    "newArchEnabled": true,
     "icon": "./assets/app-logo.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -57,3 +58,4 @@
     ]
   }
 }
+
