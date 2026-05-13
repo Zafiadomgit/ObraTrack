@@ -111,15 +111,17 @@ export default function HomeScreen({ navigation: propNavigation }: any) {
         }
 
         try {
-            const id = await addProject({
+            const projectData: any = {
                 nombreProyecto: newNombre.trim(),
                 ubicacion: newUbicacion.trim(),
                 fechaInicio: new Date().toISOString().split('T')[0],
-                fechaFin: newFechaFin.trim() || undefined,
                 userId: user.id,
                 companyId,
                 tipoProyecto,
-            });
+            };
+            if (newFechaFin.trim()) projectData.fechaFin = newFechaFin.trim();
+
+            const id = await addProject(projectData);
 
             const standardMats = getStandardMaterials(tipoProyecto, id, user.id, companyId);
             standardMats.forEach(m => addMaterial(m, companyId));
