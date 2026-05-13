@@ -182,18 +182,16 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                     <View style={{ flex: 1, marginLeft: SPACING.md }}>
                         <Text style={styles.greetingText}>{greeting},</Text>
                         <Text style={styles.nameText}>{user?.nombre ?? 'Usuario'}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                            <Text style={[styles.dateText, { marginRight: 8 }]}>{todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1)}</Text>
-                            {user?.role === 'admin' && user?.plan !== 'enterprise' && (
-                                <TouchableOpacity 
-                                    onPress={() => navigation.navigate('Subscription' as never)}
-                                    style={{ backgroundColor: COLORS.warning + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: COLORS.warning + '50', flexDirection: 'row', alignItems: 'center' }}
-                                >
-                                    <Icon name="star" size={10} color={COLORS.warning} style={{ marginRight: 4 }} />
-                                    <Text style={{ color: COLORS.warning, fontSize: 10, fontWeight: 'bold' }}>Mejorar Plan</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                        <Text style={[styles.dateText, { marginTop: 2 }]}>{todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1)}</Text>
+                        {user?.role === 'admin' && user?.plan !== 'enterprise' && (
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate('Subscription' as never)}
+                                style={{ alignSelf: 'flex-start', backgroundColor: COLORS.warning + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: COLORS.warning + '50', flexDirection: 'row', alignItems: 'center', marginTop: 4 }}
+                            >
+                                <Icon name="star" size={10} color={COLORS.warning} style={{ marginRight: 4 }} />
+                                <Text style={{ color: COLORS.warning, fontSize: 10, fontWeight: 'bold' }}>Mejorar Plan</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                     <TouchableOpacity onPress={() => navigation.navigate('Notifications' as never)} style={[styles.logoutBtn, { marginRight: SPACING.sm }]}>
                         <Icon name="bell" size={18} color={COLORS.textSecondary} />
