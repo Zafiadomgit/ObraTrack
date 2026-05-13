@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     logoContainer: { alignItems: 'center', marginBottom: SPACING.xxl * 1.5 },
     logoImage: { width: 230, height: 230, resizeMode: 'contain', marginBottom: -SPACING.xl },
     logoText: { fontSize: 32, fontWeight: '900', color: COLORS.white, marginTop: -SPACING.sm, letterSpacing: 1 },
-    logoTextAccent: { color: COLORS.primary },
+    logoTextAccent: { color: '#4FC3F7' },
     subtitle: { color: COLORS.textSecondary, fontSize: FONTS.sizes.sm, marginTop: 4 },
 
     formContainer: { width: '100%' },
