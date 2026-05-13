@@ -47,28 +47,26 @@ export default function DailyLogScreen() {
         else setLoading(true);
 
         try {
+            // No orderBy to avoid requiring a composite Firestore index — sort client-side
             let q = query(
                 collection(db, `companies/${currentUser.companyId}/dailyLogs`),
                 where('projectId', '==', projectId),
-                orderBy('fecha', 'desc'),
-                limit(10)
+                limit(20)
             );
 
             if (isLoadMore && lastDoc) {
                 q = query(
                     collection(db, `companies/${currentUser.companyId}/dailyLogs`),
                     where('projectId', '==', projectId),
-                    orderBy('fecha', 'desc'),
                     startAfter(lastDoc),
-                    limit(10)
+                    limit(20)
                 );
             }
 
             const snapshot = await getDocs(q);
-            const fetched = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as DailyLog));
+            const fetched = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as DailyLog))
+                .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
             if (snapshot.docs.length > 0) {
                 setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
@@ -219,7 +217,7 @@ export default function DailyLogScreen() {
             const result = await ImageManipulator.manipulateAsync(
                 uri,
                 [{ resize: { width: 1280 } }],
-                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+                { compress: 0.7, format: 'jpeg' as any }
             );
             return result.uri;
         } catch (error) {
@@ -270,7 +268,8 @@ export default function DailyLogScreen() {
 
     const renderLog = ({ item }: { item: DailyLog }) => {
         const weather = getWeatherIcon(item.clima);
-        const dateStr = format(new Date(item.fecha), 'EEEE, d MMM yyyy', { locale: es });
+        let dateStr = item.fecha;
+        try { dateStr = format(new Date(item.fecha), 'EEEE, d MMM yyyy', { locale: es }); } catch { /* keep raw */ }
 
         return (
             <TouchableOpacity style={styles.logCard} onPress={() => openEditModal(item)}>
@@ -300,7 +299,7 @@ export default function DailyLogScreen() {
                     ) : (
                         <View style={styles.perfTimeBox}>
                             <Text style={styles.perfTimeLabel}>Inicio: </Text>
-                            <Text style={styles.perfTimeValue}>{format(new Date(item.horaInicio), 'HH:mm')}</Text>
+                            <Text style={styles.perfTimeValue}>{(() => { try { return format(new Date(item.horaInicio!), 'HH:mm'); } catch { return '--:--'; } })()}</Text>
                         </View>
                     )}
 
@@ -317,7 +316,7 @@ export default function DailyLogScreen() {
                     {item.horaFin && (
                         <View style={[styles.perfTimeBox, { marginLeft: 12 }]}>
                             <Text style={styles.perfTimeLabel}>Fin: </Text>
-                            <Text style={styles.perfTimeValue}>{format(new Date(item.horaFin), 'HH:mm')}</Text>
+                            <Text style={styles.perfTimeValue}>{(() => { try { return format(new Date(item.horaFin!), 'HH:mm'); } catch { return '--:--'; } })()}</Text>
                         </View>
                     )}
 
