@@ -9,6 +9,7 @@ import { usePersonnelStore, Worker, MemberRole } from '../store/personnelStore';
 import { useAppStore } from '../../../store/appStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ExportService } from '../../../core/services/exportService';
 
