@@ -4,7 +4,7 @@
  * Works on both web (download via blob) and mobile (share via expo-sharing).
  */
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { User } from '../../../store/appStore';
 
