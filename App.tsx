@@ -76,7 +76,11 @@ function AppTabs() {
           borderTopColor: COLORS.border,
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          paddingTop: 6
+          paddingTop: 6,
+          position: 'absolute',
+        },
+        sceneStyle: {
+          paddingBottom: 60 + insets.bottom,
         },
         headerStyle: { backgroundColor: COLORS.surface },
         headerTintColor: COLORS.white,
@@ -272,3 +276,4 @@ function App() {
 }
 
 export default Sentry.wrap(App);
+
