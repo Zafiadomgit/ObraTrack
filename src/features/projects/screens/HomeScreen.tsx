@@ -279,10 +279,10 @@ export default function HomeScreen({ navigation: propNavigation }: any) {
                 }
             />
 
-            {['superAdmin', 'coordinador', 'lider'].includes(user?.role || '') && (
-                <GlobalFAB 
-                    style={{ bottom: 20 + insets.bottom }}
-                    onPress={handleOpenCreate} 
+            {['admin', 'superAdmin', 'coordinador', 'lider'].includes(user?.role || '') && (
+                <GlobalFAB
+                    containerStyle={{ bottom: 20 + insets.bottom }}
+                    onPress={handleOpenCreate}
                 />
             )}
 
