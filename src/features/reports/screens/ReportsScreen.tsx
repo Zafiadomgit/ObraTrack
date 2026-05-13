@@ -297,21 +297,44 @@ export default function ReportsScreen() {
                         </TouchableOpacity>
                     </View>
 
+                    {/* Option 1: Upload from gallery */}
                     <TouchableOpacity style={styles.uploadImageBtn} onPress={handlePickSignatureImage}>
                         <Icon name="image" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
-                        <Text style={styles.uploadImageText}>Cargar Firma desde Galería</Text>
+                        <Text style={styles.uploadImageText}>📷 Cargar Firma desde Galería</Text>
                     </TouchableOpacity>
 
+                    {/* Option 2: Generate without signature */}
+                    <TouchableOpacity
+                        style={[styles.uploadImageBtn, { marginTop: SPACING.sm, backgroundColor: COLORS.success + '20', borderWidth: 1, borderColor: COLORS.success + '50' }]}
+                        onPress={() => handleSignatureOK('')}
+                    >
+                        <Icon name="file-text" size={18} color={COLORS.success} style={{ marginRight: 8 }} />
+                        <Text style={[styles.uploadImageText, { color: COLORS.success }]}>✅ Generar PDF sin firma</Text>
+                    </TouchableOpacity>
+
+                    {/* Divider */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: SPACING.lg, marginVertical: SPACING.md }}>
+                        <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+                        <Text style={{ color: COLORS.textMuted, marginHorizontal: SPACING.sm, fontSize: 12 }}>o dibuja tu firma</Text>
+                        <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+                    </View>
+
+                    {/* Option 3: Draw signature */}
                     <View style={styles.signatureBox}>
                         <SignatureScreen
                             onOK={handleSignatureOK}
-                            onEmpty={() => alert("La firma no puede estar vacía")}
-                            descriptionText="O dibuja tu firma táctil aquí abajo:"
+                            onEmpty={() => alert('La firma no puede estar vacía')}
+                            descriptionText=""
                             clearText="Borrar"
                             confirmText="Guardar y Generar PDF"
-                            webStyle=".m-signature-pad {box-shadow: none; border: none;}"
-                            backgroundColor={COLORS.surfaceLight}
-                            penColor={COLORS.white}
+                            webStyle={`
+                                .m-signature-pad { box-shadow: none; border: 1px solid #ccc; border-radius: 8px; }
+                                .m-signature-pad--body { border: none; }
+                                .m-signature-pad--footer { background: #f0f0f0; }
+                                .m-signature-pad--footer .button { background: #2563EB; color: white; border-radius: 6px; }
+                            `}
+                            backgroundColor="#FFFFFF"
+                            penColor="#1A1A2E"
                         />
                     </View>
                 </View>
@@ -553,7 +576,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold'
     },
     signatureBox: {
-        flex: 1,
+        height: 280,
+        marginHorizontal: SPACING.lg,
+        borderRadius: RADIUS.md,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     exportRow: {
         flexDirection: 'row',
