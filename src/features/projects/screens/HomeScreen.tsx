@@ -161,66 +161,88 @@ export default function HomeScreen({ navigation: propNavigation }: any) {
         );
     };
 
+    const TYPE_COLORS: Record<string, string> = {
+        obras_civiles: '#E67E22',
+        edificios_casas: COLORS.primary,
+        torres_telecomunicaciones: '#9B59B6',
+        otro: COLORS.info,
+    };
+
     const renderProject = ({ item }: { item: Project }) => {
         const deadlineStatus = getDeadlineStatus(item.fechaFin);
+        const typeColor = TYPE_COLORS[item.tipoProyecto || 'otro'] || COLORS.primary;
         return (
             <TouchableOpacity
-                style={styles.projectCard}
+                style={[styles.projectCard, { borderLeftColor: typeColor }]}
                 onPress={() => navigation.navigate('ProjectDashboard', {
                     projectId: item.id,
                     projectName: item.nombreProyecto
                 })}
+                activeOpacity={0.85}
             >
+                {/* Top row: icon + name + status */}
                 <View style={styles.cardHeader}>
-                    <View style={styles.iconBox}>
-                        <Icon name={getTypeIcon(item.tipoProyecto || 'otro')} size={22} color={COLORS.primary} />
+                    <View style={[styles.iconBox, { backgroundColor: typeColor + '25' }]}>
+                        <Icon name={getTypeIcon(item.tipoProyecto || 'otro')} size={20} color={typeColor} />
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        {['superAdmin', 'coordinador', 'lider'].includes(user?.role || '') && (
-                            <TouchableOpacity
-                                onPress={() => setProjectToEdit(item)}
-                                style={styles.editBtn}
-                            >
-                                <Icon name="edit-2" size={18} color={COLORS.primary} />
-                            </TouchableOpacity>
+                    <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+                        <Text style={styles.projectName} numberOfLines={1}>{item.nombreProyecto}</Text>
+                        {item.tipoProyecto && (
+                            <Text style={[styles.typeText, { color: typeColor }]}>
+                                {PROJECT_TYPE_ICONS[item.tipoProyecto]} {PROJECT_TYPE_LABELS[item.tipoProyecto]}
+                            </Text>
                         )}
-
-                        {['superAdmin', 'coordinador'].includes(user?.role || '') && (
-                            <TouchableOpacity
-                                onPress={(e) => {
-                                    Alert.alert(
-                                        'Eliminar Proyecto',
-                                        `¿Estás seguro de eliminar "${item.nombreProyecto}"? Esta acción no se puede deshacer.`,
-                                        [
-                                            { text: 'Cancelar', style: 'cancel' },
-                                            { text: 'Eliminar', style: 'destructive', onPress: () => deleteProject(item.id, companyId) },
-                                        ]
-                                    );
-                                }}
-                                style={styles.deleteBtn}
-                            >
-                                <Icon name="trash-2" size={18} color={COLORS.danger} />
-                            </TouchableOpacity>
-                        )}
-                        <View style={styles.statusBadge}>
-                            <Text style={styles.statusText}>{item.estado.toUpperCase()}</Text>
-                        </View>
+                    </View>
+                    <View style={[styles.statusBadge, item.estado === 'activo' ? styles.statusActive : styles.statusInactive]}>
+                        <View style={[styles.statusDot, { backgroundColor: item.estado === 'activo' ? COLORS.success : COLORS.textMuted }]} />
+                        <Text style={[styles.statusText, { color: item.estado === 'activo' ? COLORS.success : COLORS.textMuted }]}>
+                            {item.estado === 'activo' ? 'Activo' : item.estado}
+                        </Text>
                     </View>
                 </View>
 
-                <Text style={styles.projectName} numberOfLines={1}>{item.nombreProyecto}</Text>
-
-                {item.tipoProyecto && (
-                    <View style={styles.typeBadge}>
-                        <Text style={styles.typeText}>
-                            {PROJECT_TYPE_ICONS[item.tipoProyecto]} {PROJECT_TYPE_LABELS[item.tipoProyecto]}
-                        </Text>
-                    </View>
-                )}
-
-                <View style={[styles.infoRow, { marginTop: SPACING.xs }]}>
-                    <Icon name="map-pin" size={14} color={COLORS.textMuted} />
+                {/* Location */}
+                <View style={styles.infoRow}>
+                    <Icon name="map-pin" size={13} color={COLORS.textMuted} />
                     <Text style={styles.infoText} numberOfLines={1}>{item.ubicacion}</Text>
+                </View>
+
+                {/* Footer: deadline + actions */}
+                <View style={styles.cardFooter}>
+                    {deadlineStatus ? (
+                        <View style={[styles.deadlineBadge, { backgroundColor: deadlineStatus.color + '18', borderColor: deadlineStatus.color + '60' }]}>
+                            <Icon name="clock" size={11} color={deadlineStatus.color} />
+                            <Text style={[styles.deadlineText, { color: deadlineStatus.color }]}>{deadlineStatus.label}</Text>
+                        </View>
+                    ) : item.fechaFin ? (
+                        <View style={styles.deadlineBadge}>
+                            <Icon name="calendar" size={11} color={COLORS.textMuted} />
+                            <Text style={[styles.deadlineText, { color: COLORS.textMuted }]}>{item.fechaFin}</Text>
+                        </View>
+                    ) : <View />}
+
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {['superAdmin', 'coordinador', 'lider'].includes(user?.role || '') && (
+                            <TouchableOpacity onPress={() => setProjectToEdit(item)} style={styles.editBtn}>
+                                <Icon name="edit-2" size={15} color={COLORS.primary} />
+                            </TouchableOpacity>
+                        )}
+                        {['superAdmin', 'coordinador'].includes(user?.role || '') && (
+                            <TouchableOpacity
+                                onPress={() => Alert.alert(
+                                    'Eliminar Proyecto',
+                                    `¿Eliminar "${item.nombreProyecto}"? Esta acción no se puede deshacer.`,
+                                    [
+                                        { text: 'Cancelar', style: 'cancel' },
+                                        { text: 'Eliminar', style: 'destructive', onPress: () => deleteProject(item.id, companyId) },
+                                    ]
+                                )}
+                                style={styles.deleteBtn}
+                            >
+                                <Icon name="trash-2" size={15} color={COLORS.danger} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 </View>
             </TouchableOpacity>
         );
@@ -380,19 +402,22 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm,
         borderLeftWidth: 4, borderLeftColor: COLORS.primary,
     },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
-    iconBox: { width: 40, height: 40, borderRadius: RADIUS.md, backgroundColor: COLORS.primary + '20', alignItems: 'center', justifyContent: 'center' },
-    statusBadge: { backgroundColor: COLORS.success + '25', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-    statusText: { color: COLORS.success, fontSize: 10, fontWeight: 'bold' },
-    editBtn: { padding: 6, backgroundColor: COLORS.primary + '15', borderRadius: RADIUS.sm },
-    deleteBtn: { padding: 6, backgroundColor: COLORS.danger + '15', borderRadius: RADIUS.sm },
-    projectName: { color: COLORS.white, fontSize: FONTS.sizes.lg, fontWeight: 'bold', marginBottom: 4 },
-    typeBadge: { backgroundColor: COLORS.surfaceLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: SPACING.sm },
-    typeText: { color: COLORS.textSecondary, fontSize: FONTS.sizes.xs },
-    infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-    infoText: { color: COLORS.textSecondary, fontSize: FONTS.sizes.sm, marginLeft: 6, flex: 1 },
-    deadlineBadge: { marginTop: SPACING.sm, paddingHorizontal: SPACING.sm, paddingVertical: 5, borderRadius: RADIUS.sm, borderWidth: 1 },
-    deadlineText: { fontSize: FONTS.sizes.xs, fontWeight: 'bold' },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm },
+    iconBox: { width: 42, height: 42, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, gap: 4 },
+    statusActive: { backgroundColor: COLORS.success + '18' },
+    statusInactive: { backgroundColor: COLORS.textMuted + '18' },
+    statusDot: { width: 6, height: 6, borderRadius: 3 },
+    statusText: { fontSize: 10, fontWeight: '700' },
+    editBtn: { padding: 7, backgroundColor: COLORS.primary + '18', borderRadius: RADIUS.sm },
+    deleteBtn: { padding: 7, backgroundColor: COLORS.danger + '18', borderRadius: RADIUS.sm },
+    projectName: { color: COLORS.white, fontSize: FONTS.sizes.md, fontWeight: 'bold', marginBottom: 1 },
+    typeText: { fontSize: FONTS.sizes.xs, fontWeight: '600' },
+    infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm, marginTop: 2 },
+    infoText: { color: COLORS.textMuted, fontSize: FONTS.sizes.xs, marginLeft: 5, flex: 1 },
+    cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+    deadlineBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, gap: 4 },
+    deadlineText: { fontSize: 10, fontWeight: '600' },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: COLORS.surface, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: SPACING.xl, maxHeight: '93%' },
