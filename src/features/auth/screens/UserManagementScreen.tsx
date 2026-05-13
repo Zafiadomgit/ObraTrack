@@ -137,9 +137,9 @@ export default function UserManagementScreen({ navigation: propNavigation }: any
             setNombre(''); setCedula(''); setTelefono(''); setEmail(''); setPassword('');
         } else {
             if (Platform.OS === 'web') {
-                window.alert('Error: Ese correo ya está registrado.');
+                window.alert('Error: ' + (result.reason || 'Error al crear el usuario.'));
             } else {
-                Alert.alert('Error', 'Ese correo ya está registrado.');
+                Alert.alert('Error', result.reason || 'Error al crear el usuario.');
             }
         }
     };
@@ -421,3 +421,4 @@ const styles = StyleSheet.create({
     submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary, padding: SPACING.md, borderRadius: RADIUS.md },
     submitText: { color: COLORS.white, fontSize: FONTS.sizes.md, fontWeight: 'bold', marginLeft: SPACING.sm },
 });
+
