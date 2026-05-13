@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     Alert, Platform, ActivityIndicator
@@ -112,7 +112,7 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
 
                     if (boughtPlan) {
                         await activatePlanInFirestore(user.id, boughtPlan);
-                        await finishTransaction({ purchase, isConsumable: false });
+                        await finishTransaction(purchase, false);
                         Alert.alert(
                             '¡Suscripción activada!',
                             `Tu plan ${PLAN_PRICES[boughtPlan].label} está activo. ¡Bienvenido!`
@@ -225,7 +225,7 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
                     .find(([, id]) => id === purchase.productId);
                 if (match) {
                     restoredPlan = match[0];
-                    await finishTransaction({ purchase, isConsumable: false });
+                    await finishTransaction(purchase, false);
                     break;
                 }
             }
@@ -477,3 +477,4 @@ const styles = StyleSheet.create({
     addonPrice: { color: COLORS.primary, fontSize: FONTS.sizes.md, fontWeight: 'bold' },
     addonPeriod: { color: COLORS.textMuted, fontSize: FONTS.sizes.xs },
 });
+
