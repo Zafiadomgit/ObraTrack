@@ -9,10 +9,11 @@ interface GlobalFABProps {
     onPress?: () => void;
     icon?: keyof typeof Icon.glyphMap;
     color?: string;
-    style?: any;
+    style?: any;           // kept for backward compat (applies to container)
+    containerStyle?: any;  // preferred: applies to container
 }
 
-export default function GlobalFAB({ onPress, icon = 'plus', color = COLORS.primary, style }: GlobalFABProps) {
+export default function GlobalFAB({ onPress, icon = 'plus', color = COLORS.primary, style, containerStyle }: GlobalFABProps) {
     const navigation = useNavigation<any>();
 
     const handlePress = () => {
@@ -20,15 +21,14 @@ export default function GlobalFAB({ onPress, icon = 'plus', color = COLORS.prima
         if (onPress) {
             onPress();
         } else {
-            // Default action: Open Project Creation Modal or Navigate
-            navigation.navigate('Proyectos'); 
+            navigation.navigate('Proyectos');
         }
     };
 
     return (
-        <View style={styles.container}>
-            <TouchableOpacity 
-                style={[styles.fab, { backgroundColor: color }, style]} 
+        <View style={[styles.container, style, containerStyle]}>
+            <TouchableOpacity
+                style={[styles.fab, { backgroundColor: color }]}
                 onPress={handlePress}
                 activeOpacity={0.8}
             >
