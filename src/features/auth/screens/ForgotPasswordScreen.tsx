@@ -1,0 +1,120 @@
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../../../config/firebase';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
+import { useColors, ThemeColors } from '../../../core/theme/ThemeContext';
+import Icon from '@expo/vector-icons/Feather';
+import { useT } from '../../../core/i18n';
+
+export default function ForgotPasswordScreen() {
+    const navigation = useNavigation<any>();
+    const C = useColors();
+    const t = useT();
+    const styles = React.useMemo(() => makeStyles(C), [C]);
+    const [email, setEmail] = useState('');
+    const [sent, setSent] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const handleReset = async () => {
+        if (!email.trim()) {
+            if (Platform.OS === 'web') window.alert(t.enterYourEmail);
+            else Alert.alert(t.error, t.enterYourEmail);
+            return;
+        }
+        setLoading(true);
+        try {
+            await sendPasswordResetEmail(auth, email.trim());
+            setSent(true);
+        } catch (error: any) {
+            const msg = error.code === 'auth/user-not-found' ? t.emailNotFound : t.emailSendError;
+            if (Platform.OS === 'web') window.alert(msg);
+            else Alert.alert(t.error, msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <View style={styles.content}>
+                {/* Header */}
+                <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Login' as never)} style={styles.backBtn}>
+                    <Icon name="arrow-left" size={24} color={C.textSecondary} />
+                </TouchableOpacity>
+
+                <Image source={require('../../../../assets/logo-symbol-transparent.png')} style={styles.logo} />
+
+                {!sent ? (
+                    <>
+                        <Text style={styles.title}>{t.forgotPasswordTitle}</Text>
+                        <Text style={styles.subtitle}>{t.forgotPasswordSubtitle}</Text>
+
+                        <View style={styles.inputGroup}>
+                            <Icon name="mail" size={20} color={C.textMuted} style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder={t.email}
+                                placeholderTextColor={C.textMuted}
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                            />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.btn, loading && { opacity: 0.7 }]}
+                            onPress={handleReset}
+                            disabled={loading}
+                        >
+                            <Text style={styles.btnText}>
+                                {loading ? t.sending : t.sendRecoveryLink}
+                            </Text>
+                        </TouchableOpacity>
+                    </>
+                ) : (
+                    <View style={styles.successContainer}>
+                        <Icon name="check-circle" size={56} color={C.success} />
+                        <Text style={styles.title}>{t.emailSent}</Text>
+                        <Text style={styles.subtitle}>{t.emailSentMessage(email)}</Text>
+                        <TouchableOpacity style={styles.btn} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Login' as never)}>
+                            <Text style={styles.btnText}>{t.backToSignIn}</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
+        </KeyboardAvoidingView>
+    );
+}
+
+function makeStyles(C: ThemeColors) {
+    return StyleSheet.create({
+        container: { flex: 1, backgroundColor: C.background },
+        content: { flex: 1, padding: SPACING.xl, justifyContent: 'center', maxWidth: 450, width: '100%', alignSelf: 'center' },
+
+        backBtn: { position: 'absolute', top: SPACING.xl, left: SPACING.xl, width: 40, height: 40, justifyContent: 'center' },
+        logo: { width: 80, height: 80, resizeMode: 'contain', alignSelf: 'center', marginBottom: SPACING.lg },
+
+        title: { fontSize: 26, fontWeight: '900', color: C.white, marginBottom: SPACING.sm, textAlign: 'center' },
+        subtitle: { color: C.textSecondary, fontSize: FONTS.sizes.md, textAlign: 'center', marginBottom: SPACING.xl },
+
+        inputGroup: {
+            flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface,
+            borderRadius: RADIUS.md, marginBottom: SPACING.md, paddingHorizontal: SPACING.md,
+            borderWidth: 1, borderColor: C.border, height: 56,
+        },
+        inputIcon: { marginRight: SPACING.sm },
+        input: { flex: 1, color: C.white, fontSize: FONTS.sizes.md, height: '100%' },
+
+        btn: {
+            backgroundColor: C.primary, height: 56, borderRadius: RADIUS.md,
+            alignItems: 'center', justifyContent: 'center', marginTop: SPACING.lg, ...SHADOWS.md,
+        },
+        btnText: { color: C.white, fontWeight: 'bold', fontSize: FONTS.sizes.md },
+
+        successContainer: { alignItems: 'center' },
+    });
+}

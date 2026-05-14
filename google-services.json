@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "730159906862",
+    "project_id": "obratrack-2ab24",
+    "storage_bucket": "obratrack-2ab24.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:730159906862:android:4f3ec0cf057bf7dfad5fbf",
+        "android_client_info": {
+          "package_name": "com.zafiadom.obratrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTNc8qV2sMgmp1hCq4ZzJovnHPFjZGCjY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

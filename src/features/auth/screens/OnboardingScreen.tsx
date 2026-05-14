@@ -1,0 +1,88 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { useAppStore } from '../../../store/appStore';
+import { useMaterialStore } from '../../materials/store/materialStore';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
+import { useColors, ThemeColors } from '../../../core/theme/ThemeContext';
+import Icon from '@expo/vector-icons/Feather';
+import { useT } from '../../../core/i18n';
+
+const { width } = Dimensions.get('window');
+
+export default function OnboardingScreen() {
+    const [step, setStep] = useState(0);
+    const navigation = useNavigation<any>();
+    const C = useColors();
+    const t = useT();
+    const styles = React.useMemo(() => makeStyles(C), [C]);
+    const completeOnboarding = useAppStore(state => state.completeOnboarding);
+    const currentUser = useAppStore(state => state.user);
+    const initializeCentralWarehouse = useMaterialStore(state => state.initializeCentralWarehouse);
+
+    const ONBOARDING_STEPS = [
+        { title: t.onboarding1Title, desc: t.onboarding1Desc, icon: 'briefcase' as const },
+        { title: t.onboarding2Title, desc: t.onboarding2Desc, icon: 'clipboard' as const },
+        { title: t.onboarding3Title, desc: t.onboarding3Desc, icon: 'truck' as const },
+    ];
+
+    const handleNext = async () => {
+        if (step < ONBOARDING_STEPS.length - 1) {
+            setStep(step + 1);
+        } else {
+            await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+            if (currentUser) {
+                await initializeCentralWarehouse(currentUser.id, currentUser.companyId || 'default-company');
+            }
+            await completeOnboarding();
+        }
+    };
+
+    const currentData = ONBOARDING_STEPS[step];
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.content}>
+                <View style={styles.iconContainer}>
+                    <Icon name={currentData.icon} size={64} color={C.primary} />
+                </View>
+                <Text style={styles.title}>{currentData.title}</Text>
+                <Text style={styles.desc}>{currentData.desc}</Text>
+
+                <View style={styles.dots}>
+                    {ONBOARDING_STEPS.map((_, idx) => (
+                        <View key={idx} style={[styles.dot, step === idx && styles.dotActive]} />
+                    ))}
+                </View>
+            </View>
+
+            <TouchableOpacity style={styles.btn} onPress={handleNext}>
+                <Text style={styles.btnText}>{step === ONBOARDING_STEPS.length - 1 ? t.getStarted : t.next}</Text>
+                <Icon name={step === ONBOARDING_STEPS.length - 1 ? 'check' : 'chevron-right'} size={20} color={C.white} />
+            </TouchableOpacity>
+        </View>
+    );
+}
+
+function makeStyles(C: ThemeColors) {
+    return StyleSheet.create({
+        container: { flex: 1, backgroundColor: C.background, padding: SPACING.xl, justifyContent: 'space-between' },
+        content: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+        iconContainer: {
+            width: 120, height: 120, borderRadius: 60,
+            backgroundColor: C.surface, justifyContent: 'center', alignItems: 'center',
+            marginBottom: SPACING.xxl, ...SHADOWS.md
+        },
+        title: { fontSize: 24, fontWeight: 'bold', color: C.white, marginBottom: SPACING.md, textAlign: 'center' },
+        desc: { fontSize: FONTS.sizes.md, color: C.textSecondary, textAlign: 'center', paddingHorizontal: SPACING.md, lineHeight: 24 },
+        dots: { flexDirection: 'row', marginTop: SPACING.xxl * 2, gap: 8 },
+        dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.surface },
+        dotActive: { width: 24, backgroundColor: C.primary },
+        btn: {
+            backgroundColor: C.primary, height: 56, borderRadius: RADIUS.md,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', ...SHADOWS.md, marginBottom: SPACING.xl
+        },
+        btnText: { color: C.white, fontWeight: 'bold', fontSize: FONTS.sizes.md, marginRight: SPACING.sm }
+    });
+}
