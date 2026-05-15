@@ -1,15 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Alert, Linking, ActivityIndicator
+    Alert, Platform, ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
+import RNIap, {
+    initConnection,
+    endConnection,
+    getSubscriptions,
+    requestSubscription,
+    getAvailablePurchases,
+    purchaseUpdatedListener,
+    purchaseErrorListener,
+    finishTransaction,
+    type SubscriptionPurchase,
+    type PurchaseError,
+} from 'react-native-iap';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../../config/firebase';
 import { useAppStore } from '../../../store/appStore';
 import { FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import { useColors, ThemeColors } from '../../../core/theme/ThemeContext';
-import { PLAN_PRICES, ADDON_PRICES, PlanTier } from '../../../core/constants/plans';
+import { PLAN_PRICES, ADDON_PRICES, PLAY_STORE_PRODUCT_IDS, PlanTier } from '../../../core/constants/plans';
+
+// ─── IDs de producto en Play Store ───────────────────────────────────────────
+const SUBSCRIPTION_IDS = Object.values(PLAY_STORE_PRODUCT_IDS);
+
+// Add-on one-time product IDs (configurar en Google Play Console)
+const ADDON_PRODUCT_IDS = {
+    EXTRA_USER: 'obratrack_addon_extra_user',
+    EXTRA_PROJECT: 'obratrack_addon_extra_project',
+};
 
 // ─── Contenido por plan ──────────────────────────────────────────────────────
 const PLAN_FEATURES: Record<PlanTier, { text: string; available: boolean }[]> = {
@@ -45,12 +68,11 @@ const PLAN_ICONS: Record<PlanTier, keyof typeof Icon.glyphMap> = {
     enterprise: 'zap',
 };
 
-// URL de la página de pagos — cambia esto a tu URL real cuando esté lista
-const PAYMENT_URLS: Record<PlanTier, string> = {
-    free: '',
-    premium: 'mailto:soporte@zafiadom.com?subject=Activar%20Plan%20Premium%20ObraTrack',
-    enterprise: 'mailto:soporte@zafiadom.com?subject=Activar%20Plan%20Enterprise%20ObraTrack',
-};
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+async function activatePlanInFirestore(userId: string, plan: PlanTier) {
+    await updateDoc(doc(db, 'users', userId), { plan });
+    useAppStore.getState().setUser({ ...useAppStore.getState().user!, plan });
+}
 
 // ─── Componente ──────────────────────────────────────────────────────────────
 interface Props {
@@ -69,68 +91,182 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
     }), [C]);
     const { user } = useAppStore();
     const [loading, setLoading] = useState<string | null>(null);
+    const [iapReady, setIapReady] = useState(false);
     const currentPlan = (user?.plan as PlanTier) || 'free';
 
-    // ─── Seleccionar plan ─────────────────────────────────────────────────────
+    // ─── Inicializar IAP y listeners al montar ────────────────────────────────
+    useEffect(() => {
+        if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+
+        let purchaseUpdateSub: ReturnType<typeof purchaseUpdatedListener>;
+        let purchaseErrorSub: ReturnType<typeof purchaseErrorListener>;
+
+        const setup = async () => {
+            try {
+                await initConnection();
+                setIapReady(true);
+
+                purchaseUpdateSub = purchaseUpdatedListener(async (purchase: SubscriptionPurchase) => {
+                    const receipt = purchase.transactionReceipt;
+                    if (!receipt || !user) return;
+
+                    const boughtPlan = (Object.entries(PLAY_STORE_PRODUCT_IDS) as [PlanTier, string][])
+                        .find(([, id]) => id === purchase.productId)?.[0];
+
+                    if (boughtPlan) {
+                        await activatePlanInFirestore(user.id, boughtPlan);
+                        await finishTransaction(purchase, false);
+                        Alert.alert(
+                            '¡Suscripción activada!',
+                            `Tu plan ${PLAN_PRICES[boughtPlan].label} está activo. ¡Bienvenido!`
+                        );
+                        navigation.goBack();
+                    }
+                    setLoading(null);
+                });
+
+                purchaseErrorSub = purchaseErrorListener((error: PurchaseError) => {
+                    if (error.code !== 'E_USER_CANCELLED') {
+                        Alert.alert('Error de compra', error.message || 'No se pudo procesar la suscripción.');
+                    }
+                    setLoading(null);
+                });
+            } catch (e) {
+                console.error('IAP init error:', e);
+            }
+        };
+
+        setup();
+
+        return () => {
+            purchaseUpdateSub?.remove();
+            purchaseErrorSub?.remove();
+            endConnection();
+        };
+    }, [user]);
+
+    // ─── Comprar suscripción ──────────────────────────────────────────────────
     const handleSelectPlan = async (plan: PlanTier) => {
         if (plan === currentPlan) return;
 
         if (plan === 'free') {
             Alert.alert(
                 'Cambio de plan',
-                'Para bajar al plan gratuito, cancela tu suscripción activa y contacta soporte en soporte@zafiadom.com si necesitas ayuda.'
+                'Para bajar al plan gratuito, cancela tu suscripción desde la app de Google Play Store y contacta soporte en soporte@zafiadom.com si necesitas ayuda.'
             );
             return;
         }
 
-        const url = PAYMENT_URLS[plan];
-        if (!url) return;
+        if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
+            Alert.alert(
+                'Suscripción',
+                `Para activar el plan ${PLAN_PRICES[plan].label} desde web, contacta:\nsoporte@zafiadom.com`
+            );
+            return;
+        }
 
-        setLoading(plan);
+        if (!iapReady) {
+            Alert.alert(
+                'Pagos no disponibles',
+                'Las compras dentro de la app solo están disponibles en la versión publicada de Google Play Store.'
+            );
+            return;
+        }
+
+        const productId = PLAY_STORE_PRODUCT_IDS[plan as Exclude<PlanTier, 'free'>];
+        setLoading(productId);
+
         try {
-            const supported = await Linking.canOpenURL(url);
-            if (supported) {
-                await Linking.openURL(url);
-            } else {
-                Alert.alert(
-                    'Contacta a soporte',
-                    `Para activar el plan ${PLAN_PRICES[plan].label} escríbenos a:\nsoporte@zafiadom.com`
-                );
+            const products = await getSubscriptions({ skus: [productId] });
+            if (!products.length) {
+                throw new Error('Producto no disponible en este momento. Intenta más tarde.');
             }
-        } catch (e) {
-            Alert.alert('Error', 'No se pudo abrir el enlace. Escríbenos a soporte@zafiadom.com');
-        } finally {
+
+            await requestSubscription({
+                sku: productId,
+                ...(Platform.OS === 'android' ? {
+                    subscriptionOffers: [{ sku: productId, offerToken: '' }]
+                } : {}),
+            });
+        } catch (error: any) {
+            if (error.code !== 'E_USER_CANCELLED') {
+                Alert.alert('Error', error.message || 'No se pudo iniciar la suscripción.');
+            }
             setLoading(null);
         }
     };
 
-    // ─── Add-on ───────────────────────────────────────────────────────────────
-    const handleBuyAddon = async (addonName: string) => {
+    // ─── Comprar add-on ───────────────────────────────────────────────────────
+    const handleBuyAddon = async (addonId: string, addonName: string) => {
         if (currentPlan === 'free') {
             Alert.alert('Plan requerido', 'Los add-ons están disponibles solo para planes Premium o Enterprise.');
             return;
         }
-        const url = `mailto:soporte@zafiadom.com?subject=Add-on%20${encodeURIComponent(addonName)}%20ObraTrack`;
+
+        if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
+            Alert.alert('Add-on', `Para adquirir "${addonName}", contacta: soporte@zafiadom.com`);
+            return;
+        }
+
+        if (!iapReady) {
+            Alert.alert(
+                'Pagos no disponibles',
+                'Las compras dentro de la app solo están disponibles en la versión publicada de Google Play Store.'
+            );
+            return;
+        }
+
+        setLoading(addonId);
         try {
-            await Linking.openURL(url);
-        } catch {
-            Alert.alert('Contacta soporte', `Para adquirir "${addonName}", escríbenos a: soporte@zafiadom.com`);
+            await requestSubscription({
+                sku: addonId,
+                ...(Platform.OS === 'android' ? {
+                    subscriptionOffers: [{ sku: addonId, offerToken: '' }]
+                } : {}),
+            });
+        } catch (error: any) {
+            if (error.code !== 'E_USER_CANCELLED') {
+                Alert.alert('Error', error.message || 'No se pudo procesar el add-on.');
+            }
+            setLoading(null);
         }
     };
 
-    // ─── Restaurar / verificar plan ───────────────────────────────────────────
+    // ─── Restaurar compras ────────────────────────────────────────────────────
     const handleRestorePurchases = async () => {
-        Alert.alert(
-            'Verificar suscripción',
-            'Si ya tienes una suscripción activa y no se refleja en la app, contacta a soporte para que lo activemos manualmente.\n\nsoporte@zafiadom.com',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Contactar',
-                    onPress: () => Linking.openURL('mailto:soporte@zafiadom.com?subject=Verificar%20suscripcion%20ObraTrack'),
-                },
-            ]
-        );
+        if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+
+        setLoading('restore');
+        try {
+            const purchases = await getAvailablePurchases();
+            if (!purchases.length || !user) {
+                Alert.alert('Restaurar compra', 'No se encontraron compras anteriores para esta cuenta.');
+                setLoading(null);
+                return;
+            }
+
+            let restoredPlan: PlanTier | null = null;
+            for (const purchase of purchases) {
+                const match = (Object.entries(PLAY_STORE_PRODUCT_IDS) as [PlanTier, string][])
+                    .find(([, id]) => id === purchase.productId);
+                if (match) {
+                    restoredPlan = match[0];
+                    await finishTransaction(purchase, false);
+                    break;
+                }
+            }
+
+            if (restoredPlan) {
+                await activatePlanInFirestore(user.id, restoredPlan);
+                Alert.alert('¡Compra restaurada!', `Tu plan ${PLAN_PRICES[restoredPlan].label} ha sido restaurado.`);
+            } else {
+                Alert.alert('Restaurar compra', 'No se encontraron suscripciones activas para restaurar.');
+            }
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'No se pudo restaurar la compra.');
+        } finally {
+            setLoading(null);
+        }
     };
 
     // ─── Render plan card ─────────────────────────────────────────────────────
@@ -140,7 +276,8 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
         const accent = PLAN_ACCENT[tier];
         const isActive = currentPlan === tier;
         const isPopular = tier === 'premium';
-        const isLoading = loading === tier;
+        const productId = tier !== 'free' ? PLAY_STORE_PRODUCT_IDS[tier as Exclude<PlanTier, 'free'>] : null;
+        const isLoading = productId ? loading === productId : false;
 
         return (
             <View key={tier} style={[styles.planCard, isActive && { borderColor: accent, borderWidth: 2 }]}>
@@ -233,21 +370,21 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
 
                 <Text style={styles.subtitle}>
                     Elige el plan que mejor se adapte a tu empresa.{'\n'}
-                    Para activar tu plan escríbenos y lo configuramos de inmediato.
+                    Pagos seguros a través de Google Play Store.
                 </Text>
 
                 {(['free', 'premium', 'enterprise'] as PlanTier[]).map(renderPlan)}
 
                 {/* ── Add-ons ── */}
                 <View style={{ marginTop: SPACING.md, marginBottom: SPACING.md }}>
-                    <Text style={[styles.sectionTitle, { marginBottom: SPACING.xs }]}>Add-ons Disponibles</Text>
+                    <Text style={[styles.headerTitle, { marginBottom: SPACING.xs }]}>Add-ons Disponibles</Text>
                     <Text style={[styles.subtitle, { textAlign: 'left', marginBottom: SPACING.md }]}>
                         Amplía los límites de tu plan comprando cupos adicionales.
                     </Text>
 
                     <TouchableOpacity
                         style={styles.addonCard}
-                        onPress={() => handleBuyAddon(ADDON_PRICES.EXTRA_USER.label)}
+                        onPress={() => handleBuyAddon(ADDON_PRODUCT_IDS.EXTRA_USER, ADDON_PRICES.EXTRA_USER.label)}
                         disabled={loading !== null}
                     >
                         <View style={[styles.planIconCircle, { backgroundColor: C.primary + '20', width: 40, height: 40, marginRight: SPACING.md }]}>
@@ -258,14 +395,20 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
                             <Text style={styles.addonDesc}>Cupo para rol operativo o administrativo.</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={styles.addonPrice}>{ADDON_PRICES.EXTRA_USER.price}</Text>
-                            <Text style={styles.addonPeriod}>/mes</Text>
+                            {loading === ADDON_PRODUCT_IDS.EXTRA_USER ? (
+                                <ActivityIndicator size="small" color={C.primary} />
+                            ) : (
+                                <>
+                                    <Text style={styles.addonPrice}>{ADDON_PRICES.EXTRA_USER.price}</Text>
+                                    <Text style={styles.addonPeriod}>/mes</Text>
+                                </>
+                            )}
                         </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.addonCard}
-                        onPress={() => handleBuyAddon(ADDON_PRICES.EXTRA_PROJECT.label)}
+                        onPress={() => handleBuyAddon(ADDON_PRODUCT_IDS.EXTRA_PROJECT, ADDON_PRICES.EXTRA_PROJECT.label)}
                         disabled={loading !== null}
                     >
                         <View style={[styles.planIconCircle, { backgroundColor: C.primary + '20', width: 40, height: 40, marginRight: SPACING.md }]}>
@@ -276,8 +419,14 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
                             <Text style={styles.addonDesc}>Obra adicional con control separado.</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={styles.addonPrice}>{ADDON_PRICES.EXTRA_PROJECT.price}</Text>
-                            <Text style={styles.addonPeriod}>/mes</Text>
+                            {loading === ADDON_PRODUCT_IDS.EXTRA_PROJECT ? (
+                                <ActivityIndicator size="small" color={C.primary} />
+                            ) : (
+                                <>
+                                    <Text style={styles.addonPrice}>{ADDON_PRICES.EXTRA_PROJECT.price}</Text>
+                                    <Text style={styles.addonPeriod}>/mes</Text>
+                                </>
+                            )}
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -288,12 +437,17 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
                     onPress={handleRestorePurchases}
                     disabled={loading !== null}
                 >
-                    <Text style={styles.restoreText}>¿Ya tienes una suscripción? Verificar</Text>
+                    {loading === 'restore' ? (
+                        <ActivityIndicator size="small" color={C.primary} />
+                    ) : (
+                        <Text style={styles.restoreText}>Restaurar compra existente</Text>
+                    )}
                 </TouchableOpacity>
 
                 <Text style={styles.legalText}>
-                    Los precios están en COP e incluyen IVA. La activación es manual por nuestro equipo en
-                    un plazo de 24 h. Para cancelar o cambiar tu plan escríbenos a soporte@zafiadom.com.
+                    Los precios están en COP e incluyen IVA. La suscripción se renueva automáticamente
+                    a través de Google Play. Puedes cancelar desde la app de Play Store en cualquier momento.
+                    Soporte: soporte@zafiadom.com
                 </Text>
             </ScrollView>
         </View>
@@ -306,7 +460,6 @@ function makeStyles(C: ThemeColors) {
         header: { flexDirection: 'row', alignItems: 'center', padding: SPACING.md, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.border },
         backBtn: { marginRight: SPACING.md },
         headerTitle: { color: C.white, fontSize: FONTS.sizes.lg, fontWeight: 'bold' },
-        sectionTitle: { color: C.white, fontSize: FONTS.sizes.lg, fontWeight: 'bold' },
 
         subtitle: { color: C.textSecondary, textAlign: 'center', fontSize: FONTS.sizes.sm, lineHeight: 22, marginBottom: SPACING.lg, marginTop: SPACING.sm },
 
