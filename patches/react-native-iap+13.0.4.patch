@@ -1,0 +1,23 @@
+diff --git a/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt b/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt
+index 70149d2..77cc01b 100644
+--- a/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt
++++ b/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt
+@@ -13,6 +13,7 @@ import com.android.billingclient.api.ConsumeParams
+ import com.android.billingclient.api.ConsumeResponseListener
+ import com.android.billingclient.api.GetBillingConfigParams
+ import com.android.billingclient.api.GetBillingConfigParams.Builder
++import com.android.billingclient.api.PendingPurchasesParams
+ import com.android.billingclient.api.ProductDetails
+ import com.android.billingclient.api.Purchase
+ import com.android.billingclient.api.PurchaseHistoryRecord
+@@ -42,7 +43,9 @@ import com.google.android.gms.common.GoogleApiAvailability
+ @ReactModule(name = RNIapModule.TAG)
+ class RNIapModule(
+     private val reactContext: ReactApplicationContext,
+-    private val builder: BillingClient.Builder = BillingClient.newBuilder(reactContext).enablePendingPurchases(),
++    private val builder: BillingClient.Builder = BillingClient.newBuilder(reactContext).enablePendingPurchases(
++        PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()
++    ),
+     private val googleApiAvailability: GoogleApiAvailability = GoogleApiAvailability.getInstance(),
+ ) : ReactContextBaseJavaModule(reactContext),
+     PurchasesUpdatedListener {
