@@ -11,7 +11,7 @@ import RNIap, {
     endConnection,
     getSubscriptions,
     requestSubscription,
-    restorePurchases,
+    getAvailablePurchases,
     purchaseUpdatedListener,
     purchaseErrorListener,
     finishTransaction,
@@ -242,7 +242,7 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
 
         setLoading('restore');
         try {
-            const purchases = await restorePurchases();
+            const purchases = await getAvailablePurchases();
             if (!purchases.length || !user) {
                 Alert.alert('Restaurar compra', 'No se encontraron compras anteriores para esta cuenta.');
                 setLoading(null);
