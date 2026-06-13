@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 import { analytics } from '../../../core/services/analyticsService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../../../store/appStore';
@@ -24,9 +25,12 @@ export default function LoginScreen() {
     }, []);
 
     const checkBiometricStatus = async () => {
+        // Biometric login is native-only and requires previously stored credentials.
+        if (Platform.OS === 'web') return;
         try {
             const val = await AsyncStorage.getItem('biometricEnabled');
-            if (val === 'true') {
+            const savedEmail = await SecureStore.getItemAsync('bioEmail');
+            if (val === 'true' && savedEmail) {
                 setHasLoggedInBefore(true);
             }
         } catch (e) {
@@ -38,8 +42,17 @@ export default function LoginScreen() {
         if (email && password) {
             const result = await login(email.trim(), password);
             if (result.success) {
-                await AsyncStorage.setItem('biometricEnabled', 'true');
                 analytics.trackLogin('email');
+                // Persist credentials securely so the user can re-login with biometrics.
+                if (Platform.OS !== 'web') {
+                    try {
+                        await SecureStore.setItemAsync('bioEmail', email.trim());
+                        await SecureStore.setItemAsync('bioPassword', password);
+                        await AsyncStorage.setItem('biometricEnabled', 'true');
+                    } catch (e) {
+                        console.error('Error storing biometric credentials', e);
+                    }
+                }
             } else {
                 alert(result.reason || t.error);
             }
@@ -52,19 +65,34 @@ export default function LoginScreen() {
         try {
             const hasHardware = await LocalAuthentication.hasHardwareAsync();
             const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-            if (hasHardware && isEnrolled) {
-                const result = await LocalAuthentication.authenticateAsync({
-                    promptMessage: t.biometricRequired,
-                    fallbackLabel: t.usePassword,
-                });
-                if (result.success) {
-                    const authResult = await login('biometric@obratrack.com', 'biometric_token');
-                    if (!authResult.success) {
-                        alert(authResult.reason || t.biometricError);
-                    }
-                }
-            } else {
+            if (!hasHardware || !isEnrolled) {
                 alert(t.biometricNotConfigured);
+                return;
+            }
+
+            const savedEmail = await SecureStore.getItemAsync('bioEmail');
+            const savedPassword = await SecureStore.getItemAsync('bioPassword');
+            if (!savedEmail || !savedPassword) {
+                // No stored credentials — user must sign in with password at least once.
+                alert(t.biometricNotConfigured);
+                return;
+            }
+
+            const result = await LocalAuthentication.authenticateAsync({
+                promptMessage: t.biometricRequired,
+                fallbackLabel: t.usePassword,
+            });
+            if (result.success) {
+                const authResult = await login(savedEmail, savedPassword);
+                if (authResult.success) {
+                    analytics.trackLogin('biometric');
+                } else {
+                    // Stored credentials are no longer valid (e.g. password changed).
+                    await SecureStore.deleteItemAsync('bioEmail');
+                    await SecureStore.deleteItemAsync('bioPassword');
+                    await AsyncStorage.setItem('biometricEnabled', 'false');
+                    alert(authResult.reason || t.biometricError);
+                }
             }
         } catch (error) {
             console.error(error);

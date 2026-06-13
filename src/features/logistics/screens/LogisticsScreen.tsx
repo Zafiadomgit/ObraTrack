@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
+import { isValidDateString } from '../../../core/utils/formatters';
 import { useLogisticsStore, Shipment, ShipmentMaterial } from '../store/logisticsStore';
 import { useAppStore } from '../../../store/appStore';
 import { useProjectStore } from '../../projects/store/projectStore';
@@ -111,8 +112,13 @@ export default function LogisticsScreen() {
             return;
         }
 
-        const estimated = fechaEstimada
-            ? new Date(fechaEstimada).toISOString()
+        if (fechaEstimada.trim() && !isValidDateString(fechaEstimada)) {
+            Alert.alert('Fecha inválida', 'La fecha estimada debe ser una fecha real con formato AAAA-MM-DD.');
+            return;
+        }
+
+        const estimated = fechaEstimada.trim()
+            ? new Date(fechaEstimada.trim()).toISOString()
             : new Date(Date.now() + 86400000).toISOString();
 
         if (currentUser) {

@@ -22,55 +22,75 @@ service cloud.firestore {
       return belongsToCompany(companyId) && callerData().role == 'admin';
     }
 
-    // ─── /users collection ────────────────────────────────────────────────────
-    // Each user can read/write their own doc.
-    // Admins can read/write any user doc that shares their companyId
-    // (required for UserManagementScreen to list and approve users).
-    match /users/{userId} {
-      // Own doc — always accessible
-      allow read, write: if isAuth() && request.auth.uid == userId;
+    // ─── /companies/{companyId} — company ownership anchor ─────────────────────
+    // Created once during company registration. Used to prove that an admin
+    // legitimately owns the company they are claiming (prevents a user from
+    // self-registering as admin of someone else's existing company).
+    match /companies/{companyId} {
+      allow get: if isAuth();
 
-      // Admin of same company can read all members
+      // Only allow creating a NEW company doc owned by the caller.
+      allow create: if isAuth()
+        && request.resource.data.ownerId == request.auth.uid
+        && !exists(/databases/$(database)/documents/companies/$(companyId));
+
+      // Only the owner can modify/remove the company doc.
+      allow update, delete: if isAuth() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // ─── /users collection ────────────────────────────────────────────────────
+    match /users/{userId} {
+      // Own doc is always readable by its owner.
+      allow get: if isAuth() && request.auth.uid == userId;
+
+      // Admin of same company can read all members.
       allow read: if isAuth()
         && callerData().role == 'admin'
         && resource.data.companyId == callerData().companyId;
 
-      // Admin can update (approve/suspend/change role) any member of same company
-      allow update: if isAuth()
-        && callerData().role == 'admin'
-        && resource.data.companyId == callerData().companyId;
+      // Self-update: a user may edit their own doc but may NOT escalate their
+      // own role, status, or move themselves to another company.
+      allow update: if isAuth() && request.auth.uid == userId
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.companyId == resource.data.companyId;
 
-      // Admin can delete members of same company
-      allow delete: if isAuth()
-        && callerData().role == 'admin'
-        && resource.data.companyId == callerData().companyId;
+      // Admin can update members (approve/suspend/change role) of same company,
+      // but can never promote anyone to a second admin.
+      allow update: if isCompanyAdmin(resource.data.companyId)
+        && request.resource.data.companyId == resource.data.companyId
+        && request.resource.data.role != 'admin';
 
-      // Any authenticated user can create a new user doc
-      // (used during self-registration — the doc's uid must match the caller)
-      allow create: if isAuth() && request.auth.uid == userId;
+      // Admin can remove members of same company; users can delete themselves.
+      allow delete: if isAuth() && request.auth.uid == userId;
+      allow delete: if isCompanyAdmin(resource.data.companyId);
+
+      // Self-registration paths (the doc's uid must match the caller):
+      //  (a) Company founder: admin + approved, and the company is owned by them.
+      //  (b) Employee join: any non-admin role, must start as pending.
+      allow create: if isAuth() && request.auth.uid == userId && (
+          ( request.resource.data.role == 'admin'
+            && request.resource.data.status == 'approved'
+            && exists(/databases/$(database)/documents/companies/$(request.resource.data.companyId))
+            && get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.ownerId == request.auth.uid )
+        ||
+          ( request.resource.data.role != 'admin'
+            && request.resource.data.status == 'pending' )
+      );
+
+      // Admin creating an approved member directly (different uid, via REST signUp).
+      allow create: if isAuth()
+        && callerData().role == 'admin'
+        && request.resource.data.companyId == callerData().companyId
+        && request.resource.data.role != 'admin'
+        && request.resource.data.status == 'approved';
     }
 
     // ─── /companies/{companyId}/* — multi-tenant data ─────────────────────────
     // Any approved member of the company can read/write all subcollections.
-    // Unapproved/pending members are blocked at login (appStore) but we
-    // add a status check here as a server-side safety net.
     match /companies/{companyId}/{document=**} {
       allow read, write: if belongsToCompany(companyId)
         && callerData().status == 'approved';
-    }
-
-    // ─── /companies/{companyId}/projects ──────────────────────────────────────
-    // (Explicit rules for projects subcollection — same allow as above but
-    //  kept explicit for clarity and future fine-grained control.)
-    match /companies/{companyId}/projects/{projectId} {
-      allow read, write: if belongsToCompany(companyId)
-        && callerData().status == 'approved';
-
-      // Nested subcollections inside a project
-      match /{subcollection}/{docId} {
-        allow read, write: if belongsToCompany(companyId)
-          && callerData().status == 'approved';
-      }
     }
   }
 }
