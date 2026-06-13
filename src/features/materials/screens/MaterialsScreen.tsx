@@ -168,6 +168,23 @@ export default function MaterialsScreen(props: any) {
         if (!newNombre.trim() || !newUnidad.trim()) return;
         const companyId = currentUser?.companyId || 'default-company';
 
+        // Validate numeric fields: empty is allowed (defaults to 0), but any
+        // non-empty value must be a real, non-negative number (never NaN).
+        const numericFields: { label: string; value: string }[] = [
+            { label: 'costo unitario', value: newCosto },
+            { label: 'mínimo de alerta', value: newAlerta },
+            { label: 'cantidad mínima en obra', value: newStandardQty },
+        ];
+        for (const field of numericFields) {
+            const raw = field.value.trim();
+            if (raw === '') continue;
+            const parsed = Number(raw.replace(',', '.'));
+            if (isNaN(parsed) || parsed < 0) {
+                Alert.alert('Valor inválido', `El campo "${field.label}" debe ser un número válido (0 o mayor).`);
+                return;
+            }
+        }
+
         useMaterialStore.getState().addMaterial({
             projectId,
             companyId: currentUser?.companyId || 'default-company',
@@ -175,9 +192,9 @@ export default function MaterialsScreen(props: any) {
             nombre: newNombre,
             unidad: newUnidad,
             categoria: newCategoria,
-            costoUnitario: Number(newCosto) || 0,
-            minimoAlerta: Number(newAlerta) || 0,
-            stockMinimoObra: Number(newStandardQty) || 0,
+            costoUnitario: Number(newCosto.replace(',', '.')) || 0,
+            minimoAlerta: Number(newAlerta.replace(',', '.')) || 0,
+            stockMinimoObra: Number(newStandardQty.replace(',', '.')) || 0,
             proveedor: newProveedor || undefined,
         }, companyId);
 

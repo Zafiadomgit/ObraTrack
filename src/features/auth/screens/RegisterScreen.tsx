@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, Image, Dimensions, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppStore, UserRole } from '../../../store/appStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
@@ -26,6 +26,7 @@ export default function RegisterScreen() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [selectedRole, setSelectedRole] = useState<UserRole>('lider');
+    const [loading, setLoading] = useState(false);
 
     const showAlert = (title: string, message: string, buttons?: any[]) => {
         if (Platform.OS === 'web') {
@@ -40,6 +41,7 @@ export default function RegisterScreen() {
     };
 
     const handleRegister = async () => {
+        if (loading) return;
         if (!nombre || !email || !password || !confirmPassword || !cedula) {
             showAlert(t.incompleteFields, t.fillAllFields);
             return;
@@ -52,43 +54,49 @@ export default function RegisterScreen() {
             showAlert(t.error, t.passwordTooShort);
             return;
         }
+        if (mode === 'create_company' && !companyName) {
+            showAlert(t.missingCompany, t.enterCompanyName);
+            return;
+        }
+        if (mode === 'join_company' && !companyCode) {
+            showAlert(t.missingCode, t.enterCompanyCode);
+            return;
+        }
 
-        if (mode === 'create_company') {
-            if (!companyName) {
-                showAlert(t.missingCompany, t.enterCompanyName);
-                return;
-            }
-            const selectedPlan = route.params?.selectedPlan || 'free';
-            const result = await registerCompany(nombre, email, password, cedula, companyName, selectedPlan);
-            if (result.success) {
-                analytics.trackSignUp('admin');
-                showAlert(t.companyCreated, t.welcomeAdmin);
+        const cleanEmail = email.trim();
+        setLoading(true);
+        try {
+            if (mode === 'create_company') {
+                const selectedPlan = route.params?.selectedPlan || 'free';
+                const result = await registerCompany(nombre, cleanEmail, password, cedula, companyName, selectedPlan);
+                if (result.success) {
+                    analytics.trackSignUp('admin');
+                    showAlert(t.companyCreated, t.welcomeAdmin);
+                } else {
+                    showAlert(t.error, result.reason || t.registerError);
+                }
             } else {
-                showAlert(t.error, result.reason || t.registerError);
+                const result = await registerUser(nombre, cleanEmail, password, cedula, selectedRole, false, '', companyCode.trim());
+                if (result.success) {
+                    analytics.trackSignUp(selectedRole);
+                    showAlert(
+                        t.requestSent,
+                        t.requestSentMessage(selectedRole),
+                        [{ text: t.understood, onPress: () => {
+                            if (navigation.canGoBack()) {
+                                navigation.goBack();
+                            } else {
+                                const isWebLarge = Platform.OS === 'web' && Dimensions.get('window').width > 768;
+                                navigation.navigate(isWebLarge ? 'WebLanding' : 'Login' as never);
+                            }
+                        }}]
+                    );
+                } else {
+                    showAlert(t.error, result.reason || t.registerError);
+                }
             }
-        } else {
-            if (!companyCode) {
-                showAlert(t.missingCode, t.enterCompanyCode);
-                return;
-            }
-            const result = await registerUser(nombre, email, password, cedula, selectedRole, false, '', companyCode);
-            if (result.success) {
-                analytics.trackSignUp(selectedRole);
-                showAlert(
-                    t.requestSent,
-                    t.requestSentMessage(selectedRole),
-                    [{ text: t.understood, onPress: () => {
-                        if (navigation.canGoBack()) {
-                            navigation.goBack();
-                        } else {
-                            const isWebLarge = Platform.OS === 'web' && Dimensions.get('window').width > 768;
-                            navigation.navigate(isWebLarge ? 'WebLanding' : 'Login' as never);
-                        }
-                    }}]
-                );
-            } else {
-                showAlert(t.error, result.reason || t.registerError);
-            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -233,8 +241,12 @@ export default function RegisterScreen() {
 
                 </View>
 
-                <TouchableOpacity style={styles.registerBtn} onPress={handleRegister}>
-                    <Text style={styles.registerText}>{t.signUp}</Text>
+                <TouchableOpacity style={[styles.registerBtn, loading && { opacity: 0.6 }]} onPress={handleRegister} disabled={loading}>
+                    {loading ? (
+                        <ActivityIndicator color={COLORS.white} />
+                    ) : (
+                        <Text style={styles.registerText}>{t.signUp}</Text>
+                    )}
                 </TouchableOpacity>
 
                 <View style={styles.footer}>

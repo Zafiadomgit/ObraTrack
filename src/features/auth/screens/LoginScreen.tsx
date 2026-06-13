@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { analytics } from '../../../core/services/analyticsService';
@@ -19,6 +19,7 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [hasLoggedInBefore, setHasLoggedInBefore] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         checkBiometricStatus();
@@ -39,7 +40,13 @@ export default function LoginScreen() {
     };
 
     const handleLogin = async () => {
-        if (email && password) {
+        if (loading) return;
+        if (!email || !password) {
+            alert(t.enterEmailAndPassword);
+            return;
+        }
+        setLoading(true);
+        try {
             const result = await login(email.trim(), password);
             if (result.success) {
                 analytics.trackLogin('email');
@@ -56,12 +63,14 @@ export default function LoginScreen() {
             } else {
                 alert(result.reason || t.error);
             }
-        } else {
-            alert(t.enterEmailAndPassword);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleBiometricAuth = async () => {
+        if (loading) return;
+        setLoading(true);
         try {
             const hasHardware = await LocalAuthentication.hasHardwareAsync();
             const isEnrolled = await LocalAuthentication.isEnrolledAsync();
@@ -97,6 +106,8 @@ export default function LoginScreen() {
         } catch (error) {
             console.error(error);
             alert(t.biometricError);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -141,16 +152,20 @@ export default function LoginScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-                        <Text style={styles.loginText}>{t.signIn}</Text>
+                    <TouchableOpacity style={[styles.loginBtn, loading && { opacity: 0.6 }]} onPress={handleLogin} disabled={loading}>
+                        {loading ? (
+                            <ActivityIndicator color={COLORS.white} />
+                        ) : (
+                            <Text style={styles.loginText}>{t.signIn}</Text>
+                        )}
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.forgotBtn} onPress={() => (navigation as any).navigate('ForgotPassword')}>
+                    <TouchableOpacity style={styles.forgotBtn} onPress={() => (navigation as any).navigate('ForgotPassword')} disabled={loading}>
                         <Text style={styles.forgotText}>{t.forgotPassword}</Text>
                     </TouchableOpacity>
 
                     {hasLoggedInBefore && (
-                        <TouchableOpacity style={styles.biometricBtn} onPress={handleBiometricAuth}>
+                        <TouchableOpacity style={[styles.biometricBtn, loading && { opacity: 0.6 }]} onPress={handleBiometricAuth} disabled={loading}>
                             <Ionicons name="finger-print" size={24} color={COLORS.primary} />
                             <Text style={styles.biometricText}>{t.biometricSignIn}</Text>
                         </TouchableOpacity>
