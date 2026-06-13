@@ -64,7 +64,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             q = query(q, limit(15)); // No orderBy to avoid complex index requirements initially, relying on default ID sort
 
             const snapshot = await getDocs(q);
-            const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+            const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Project));
             
             set({ 
                 projects: loaded, 
@@ -92,7 +92,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             q = query(q, startAfter(lastDoc), limit(15));
 
             const snapshot = await getDocs(q);
-            const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+            const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Project));
             
             set(state => ({ 
                 projects: [...state.projects, ...loaded], 

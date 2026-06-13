@@ -11,7 +11,7 @@ import RNIap, {
     endConnection,
     getSubscriptions,
     requestSubscription,
-    restorePurchases,
+    getAvailablePurchases,
     purchaseUpdatedListener,
     purchaseErrorListener,
     finishTransaction,
@@ -114,7 +114,7 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
 
                     if (boughtPlan) {
                         await activatePlanInFirestore(user.id, boughtPlan);
-                        await finishTransaction(purchase, false);
+                        await finishTransaction({ purchase, isConsumable: false });
                         Alert.alert(
                             '¡Suscripción activada!',
                             `Tu plan ${PLAN_PRICES[boughtPlan].label} está activo. ¡Bienvenido!`
@@ -239,7 +239,7 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
 
         setLoading('restore');
         try {
-            const purchases = await restorePurchases();
+            const purchases = await getAvailablePurchases();
             if (!purchases.length || !user) {
                 Alert.alert('Restaurar compra', 'No se encontraron compras anteriores para esta cuenta.');
                 setLoading(null);
@@ -253,7 +253,7 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
                     .find(([, id]) => id === purchase.productId);
                 if (match) {
                     restoredPlan = match[0];
-                    await finishTransaction(purchase, false);
+                    await finishTransaction({ purchase, isConsumable: false });
                     break;
                 }
             }

@@ -33,16 +33,15 @@ export default function PersonnelScreen() {
     const { projectId } = route.params;
     const isGlobal = projectId === 'all';
     const currentUser = useAppStore(state => state.user);
-    const { addWorker, updateWorker, deleteWorker, registrarDia, quitarDia, addCrewToProject, subscribeToPersonnel, unsubscribeFromPersonnel } = usePersonnelStore();
+    const { addWorker, updateWorker, deleteWorker, registrarDia, quitarDia, addCrewToProject, loadPersonnel } = usePersonnelStore();
     const allWorkers = usePersonnelStore(state => state.workers).filter(w => w.userId === currentUser?.id || currentUser?.role === 'admin');
     const crews = usePersonnelStore(state => state.crews).filter(c => !c.userId || c.userId === currentUser?.id || currentUser?.role === 'admin');
 
     React.useEffect(() => {
         if (currentUser) {
             const companyId = currentUser.companyId || 'default-company';
-            subscribeToPersonnel(currentUser.id, companyId, currentUser.role);
+            loadPersonnel(currentUser.id, companyId, currentUser.role);
         }
-        return () => unsubscribeFromPersonnel();
     }, [currentUser]);
 
     const workers = isGlobal ? allWorkers : allWorkers.filter(w => w.projectId === projectId);

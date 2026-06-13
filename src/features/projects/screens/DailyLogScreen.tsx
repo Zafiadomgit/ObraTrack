@@ -353,11 +353,11 @@ export default function DailyLogScreen() {
                 <View style={styles.footerInfo}>
                     <View style={styles.footerItem}>
                         <Icon name="users" size={14} color={COLORS.textSecondary} />
-                        <Text style={styles.footerText}>{item.trabajadoresPresentes.length} presentes</Text>
+                        <Text style={styles.footerText}>{item.trabajadoresPresentes?.length || 0} presentes</Text>
                     </View>
                     <View style={styles.footerItem}>
                         <Icon name="camera" size={14} color={COLORS.textSecondary} />
-                        <Text style={styles.footerText}>{item.listaFotos.length} fotos</Text>
+                        <Text style={styles.footerText}>{item.listaFotos?.length || 0} fotos</Text>
                     </View>
                 </View>
             </TouchableOpacity>

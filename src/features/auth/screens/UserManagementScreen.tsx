@@ -96,6 +96,7 @@ export default function UserManagementScreen({ navigation: propNavigation }: any
             await updateDoc(doc(db, 'users', id), { role: newRole });
         } catch (error) {
             console.error("Error updating role", error);
+            Alert.alert('Error', 'No se pudo actualizar el rol. Verifica tu conexión e inténtalo de nuevo.');
         }
     };
 
@@ -104,6 +105,7 @@ export default function UserManagementScreen({ navigation: propNavigation }: any
             await deleteDoc(doc(db, 'users', id));
         } catch (error) {
             console.error("Error deleting user", error);
+            Alert.alert('Error', 'No se pudo eliminar el usuario. Verifica tu conexión e inténtalo de nuevo.');
         }
     };
 

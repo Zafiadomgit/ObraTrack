@@ -43,7 +43,7 @@ export default function EquipmentScreen(props: any) {
     const allEquipment = useEquipmentStore(state => state.equipment);
     const { addEquipment, updateEquipment, deleteEquipment, updateStatus } = useEquipmentStore();
 
-    const equipment = allEquipment.filter(e => e.projectId === projectId && e.userId === currentUser?.id);
+    const equipment = allEquipment.filter(e => e.projectId === projectId && (e.userId === currentUser?.id || currentUser?.role === 'admin'));
 
     // Filter / search
     const [search, setSearch] = useState('');

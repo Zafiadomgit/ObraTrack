@@ -468,11 +468,11 @@ export default function MaterialsScreen(props: any) {
 
                     {suppliers.map(sup => (
                         <TouchableOpacity
-                            key={sup}
-                            style={[styles.filterChip, filter === 'supplier' && selectedSupplier === sup && styles.filterChipActive]}
-                            onPress={() => { setFilter('supplier'); setSelectedSupplier(sup); }}
+                            key={sup.id}
+                            style={[styles.filterChip, filter === 'supplier' && selectedSupplier === sup.name && styles.filterChipActive]}
+                            onPress={() => { setFilter('supplier'); setSelectedSupplier(sup.name); }}
                         >
-                            <Text style={[styles.filterChipText, filter === 'supplier' && selectedSupplier === sup && styles.filterChipTextActive]}>{sup}</Text>
+                            <Text style={[styles.filterChipText, filter === 'supplier' && selectedSupplier === sup.name && styles.filterChipTextActive]}>{sup.name}</Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -646,11 +646,11 @@ export default function MaterialsScreen(props: any) {
                                     </TouchableOpacity>
                                     {suppliers.map(sup => (
                                         <TouchableOpacity
-                                            key={sup}
-                                            style={[styles.choiceChip, newProveedor === sup && styles.choiceChipActive]}
-                                            onPress={() => setNewProveedor(sup)}
+                                            key={sup.id}
+                                            style={[styles.choiceChip, newProveedor === sup.name && styles.choiceChipActive]}
+                                            onPress={() => setNewProveedor(sup.name)}
                                         >
-                                            <Text style={[styles.choiceChipText, newProveedor === sup && styles.choiceChipTextActive]}>{sup}</Text>
+                                            <Text style={[styles.choiceChipText, newProveedor === sup.name && styles.choiceChipTextActive]}>{sup.name}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </ScrollView>

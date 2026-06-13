@@ -36,7 +36,7 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         if (email && password) {
-            const result = await login(email, password);
+            const result = await login(email.trim(), password);
             if (result.success) {
                 await AsyncStorage.setItem('biometricEnabled', 'true');
                 analytics.trackLogin('email');

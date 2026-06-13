@@ -327,7 +327,6 @@ const es = {
   noShipmentsInCategory: 'No hay envíos en esta categoría.',
   newShipment: 'Nuevo Envío',
   registerShipment: 'Registrar Envío',
-  destinationProject: 'Proyecto Destino *',
   writeDestination: 'O escribe destino manual (Ej: Taller Norte)...',
   truckPlate: 'Placa del Camión *',
   driverLabel: 'Conductor *',
