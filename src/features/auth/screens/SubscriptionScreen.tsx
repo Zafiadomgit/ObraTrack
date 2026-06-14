@@ -6,26 +6,19 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Feather';
-import RNIap, {
-    initConnection,
-    endConnection,
-    getSubscriptions,
-    requestSubscription,
-    getAvailablePurchases,
-    purchaseUpdatedListener,
-    purchaseErrorListener,
-    finishTransaction,
-    type SubscriptionPurchase,
-    type PurchaseError,
-} from 'react-native-iap';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useAppStore } from '../../../store/appStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import { PLAN_PRICES, ADDON_PRICES, PLAY_STORE_PRODUCT_IDS, PlanTier } from '../../../core/constants/plans';
 
-// ─── IDs de producto en Play Store ───────────────────────────────────────────
-const SUBSCRIPTION_IDS = Object.values(PLAY_STORE_PRODUCT_IDS);
+// In-app purchases (react-native-iap) are disabled in this build. Purchases
+// require the app to be published on Google Play with configured products, so
+// they cannot run in an internal test APK. The plan UI stays visible and the
+// purchase actions show a clear "not available" message. Re-enable by adding a
+// new-architecture-compatible IAP library and restoring the purchase flow.
+const PURCHASES_UNAVAILABLE_MSG =
+    'Las compras dentro de la app estarán disponibles en la versión publicada en Google Play Store. Para activar un plan ahora, escribe a soporte@zafiadom.com.';
 
 // Add-on one-time product IDs (configurar en Google Play Console)
 const ADDON_PRODUCT_IDS = {
@@ -88,64 +81,11 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<any>();
     const { user } = useAppStore();
-    const [loading, setLoading] = useState<string | null>(null);
-    const [iapReady, setIapReady] = useState(false);
+    const [loading] = useState<string | null>(null);
     const currentPlan = (user?.plan as PlanTier) || 'free';
 
-    // ─── Inicializar IAP y listeners al montar ────────────────────────────────
-    useEffect(() => {
-        if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
-
-        let purchaseUpdateSub: ReturnType<typeof purchaseUpdatedListener>;
-        let purchaseErrorSub: ReturnType<typeof purchaseErrorListener>;
-
-        const setup = async () => {
-            try {
-                await initConnection();
-                setIapReady(true);
-
-                purchaseUpdateSub = purchaseUpdatedListener(async (purchase: SubscriptionPurchase) => {
-                    const receipt = purchase.transactionReceipt;
-                    if (!receipt || !user) return;
-
-                    // Determinar qué plan se compró según el productId
-                    const boughtPlan = (Object.entries(PLAY_STORE_PRODUCT_IDS) as [PlanTier, string][])
-                        .find(([, id]) => id === purchase.productId)?.[0];
-
-                    if (boughtPlan) {
-                        await activatePlanInFirestore(user.id, boughtPlan);
-                        await finishTransaction({ purchase, isConsumable: false });
-                        Alert.alert(
-                            '¡Suscripción activada!',
-                            `Tu plan ${PLAN_PRICES[boughtPlan].label} está activo. ¡Bienvenido!`
-                        );
-                        navigation.goBack();
-                    }
-                    setLoading(null);
-                });
-
-                purchaseErrorSub = purchaseErrorListener((error: PurchaseError) => {
-                    if (error.code !== 'E_USER_CANCELLED') {
-                        Alert.alert('Error de compra', error.message || 'No se pudo procesar la suscripción.');
-                    }
-                    setLoading(null);
-                });
-            } catch (e) {
-                console.error('IAP init error:', e);
-            }
-        };
-
-        setup();
-
-        return () => {
-            purchaseUpdateSub?.remove();
-            purchaseErrorSub?.remove();
-            endConnection();
-        };
-    }, [user]);
-
-    // ─── Comprar suscripción ──────────────────────────────────────────────────
-    const handleSelectPlan = async (plan: PlanTier) => {
+    // ─── Seleccionar plan (compras deshabilitadas en esta build) ──────────────
+    const handleSelectPlan = (plan: PlanTier) => {
         if (plan === currentPlan) return;
 
         if (plan === 'free') {
@@ -156,119 +96,21 @@ export default function SubscriptionScreen({ paywallMessage }: Props) {
             return;
         }
 
-        if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
-            Alert.alert(
-                'Suscripción',
-                `Para activar el plan ${PLAN_PRICES[plan].label} desde web, contacta:\nsoporte@zafiadom.com`
-            );
-            return;
-        }
-
-        if (!iapReady) {
-            Alert.alert(
-                'Pagos no disponibles',
-                'Las compras dentro de la app solo están disponibles en la versión publicada de Google Play Store.'
-            );
-            return;
-        }
-
-        const productId = PLAY_STORE_PRODUCT_IDS[plan];
-        setLoading(productId);
-
-        try {
-            // Verificar que el producto existe en Play Console antes de comprar
-            const products = await getSubscriptions({ skus: [productId] });
-            if (!products.length) {
-                throw new Error('Producto no disponible en este momento. Intenta más tarde.');
-            }
-
-            await requestSubscription({
-                sku: productId,
-                ...(Platform.OS === 'android' ? {
-                    subscriptionOffers: [{ sku: productId, offerToken: '' }]
-                } : {}),
-            });
-            // El resultado llega por purchaseUpdatedListener
-        } catch (error: any) {
-            if (error.code !== 'E_USER_CANCELLED') {
-                Alert.alert('Error', error.message || 'No se pudo iniciar la suscripción.');
-            }
-            setLoading(null);
-        }
+        Alert.alert('Pagos no disponibles', PURCHASES_UNAVAILABLE_MSG);
     };
 
-    // ─── Comprar add-on ───────────────────────────────────────────────────────
-    const handleBuyAddon = async (addonId: string, addonName: string) => {
+    // ─── Comprar add-on (compras deshabilitadas en esta build) ────────────────
+    const handleBuyAddon = (_addonId: string, _addonName: string) => {
         if (currentPlan === 'free') {
             Alert.alert('Plan requerido', 'Los add-ons están disponibles solo para planes Premium o Enterprise.');
             return;
         }
-
-        if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
-            Alert.alert('Add-on', `Para adquirir "${addonName}", contacta: soporte@zafiadom.com`);
-            return;
-        }
-
-        if (!iapReady) {
-            Alert.alert(
-                'Pagos no disponibles',
-                'Las compras dentro de la app solo están disponibles en la versión publicada de Google Play Store.'
-            );
-            return;
-        }
-
-        setLoading(addonId);
-        try {
-            await requestSubscription({
-                sku: addonId,
-                ...(Platform.OS === 'android' ? {
-                    subscriptionOffers: [{ sku: addonId, offerToken: '' }]
-                } : {}),
-            });
-        } catch (error: any) {
-            if (error.code !== 'E_USER_CANCELLED') {
-                Alert.alert('Error', error.message || 'No se pudo procesar el add-on.');
-            }
-            setLoading(null);
-        }
+        Alert.alert('Pagos no disponibles', PURCHASES_UNAVAILABLE_MSG);
     };
 
-    // ─── Restaurar compras ────────────────────────────────────────────────────
-    const handleRestorePurchases = async () => {
-        if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
-
-        setLoading('restore');
-        try {
-            const purchases = await getAvailablePurchases();
-            if (!purchases.length || !user) {
-                Alert.alert('Restaurar compra', 'No se encontraron compras anteriores para esta cuenta.');
-                setLoading(null);
-                return;
-            }
-
-            // Buscar la compra activa más reciente que corresponda a un plan
-            let restoredPlan: PlanTier | null = null;
-            for (const purchase of purchases) {
-                const match = (Object.entries(PLAY_STORE_PRODUCT_IDS) as [PlanTier, string][])
-                    .find(([, id]) => id === purchase.productId);
-                if (match) {
-                    restoredPlan = match[0];
-                    await finishTransaction({ purchase, isConsumable: false });
-                    break;
-                }
-            }
-
-            if (restoredPlan) {
-                await activatePlanInFirestore(user.id, restoredPlan);
-                Alert.alert('¡Compra restaurada!', `Tu plan ${PLAN_PRICES[restoredPlan].label} ha sido restaurado.`);
-            } else {
-                Alert.alert('Restaurar compra', 'No se encontraron suscripciones activas para restaurar.');
-            }
-        } catch (error: any) {
-            Alert.alert('Error', error.message || 'No se pudo restaurar la compra.');
-        } finally {
-            setLoading(null);
-        }
+    // ─── Restaurar compras (compras deshabilitadas en esta build) ─────────────
+    const handleRestorePurchases = () => {
+        Alert.alert('Pagos no disponibles', PURCHASES_UNAVAILABLE_MSG);
     };
 
     // ─── Render plan card ─────────────────────────────────────────────────────
