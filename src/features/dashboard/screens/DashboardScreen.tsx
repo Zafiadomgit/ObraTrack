@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -202,9 +202,15 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                     end={{ x: 1, y: 1 }}
                     style={[styles.header, { paddingTop: insets.top + SPACING.md }]}
                 >
-                    <View style={styles.avatarCircle}>
-                        <Text style={styles.avatarText}>{firstName.slice(0, 2).toUpperCase()}</Text>
-                    </View>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => { haptic.light(); navigation.navigate('Profile' as never); }}>
+                        {user?.avatarUrl ? (
+                            <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+                        ) : (
+                            <View style={styles.avatarCircle}>
+                                <Text style={styles.avatarText}>{firstName.slice(0, 2).toUpperCase()}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
                     <View style={{ flex: 1, marginLeft: SPACING.md }}>
                         <Text style={styles.greetingText}>{greeting},</Text>
                         <Text style={styles.nameText}>{user?.nombre ?? 'Usuario'}</Text>
@@ -593,6 +599,7 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.md, ...SHADOWS.md,
     },
     avatarCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+    avatarImage: { width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
     avatarText: { color: COLORS.white, fontWeight: 'bold', fontSize: FONTS.sizes.lg },
     greetingText: { color: 'rgba(255,255,255,0.85)', fontSize: FONTS.sizes.sm },
     nameText: { color: COLORS.white, fontWeight: 'bold', fontSize: FONTS.sizes.xl },

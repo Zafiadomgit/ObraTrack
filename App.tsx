@@ -41,6 +41,7 @@ import EquipmentScreen from './src/features/equipment/screens/EquipmentScreen';
 import ConductorScreen from './src/features/logistics/screens/ConductorScreen';
 import ProjectDashboardScreen from './src/features/projects/screens/ProjectDashboardScreen';
 import SubscriptionScreen from './src/features/auth/screens/SubscriptionScreen';
+import ProfileScreen from './src/features/profile/screens/ProfileScreen';
 
 import { COLORS } from './src/core/theme';
 import { useAppStore, User } from './src/store/appStore';
@@ -214,6 +215,7 @@ function App() {
               <Stack.Screen name="WebDashboard" component={WebDashboard} options={{ headerShown: false }} />
               <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ headerShown: false }} />
               <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
             </>
           ) : user.role === 'conductor' ? (
             // ── Conductor: only sees their assigned trips ───────────────────────

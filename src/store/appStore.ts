@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { auth, db, secondaryAuth } from '../config/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence, deleteUser as deleteFirebaseUser } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence, deleteUser as deleteFirebaseUser, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,6 +29,7 @@ export interface User {
     telefono?: string;
     email: string;
     role: UserRole;
+    avatarUrl?: string;
     plan: 'free' | 'premium' | 'enterprise';
     status: 'pending' | 'approved' | 'suspended';
     fechaRegistro: string;
@@ -42,6 +43,7 @@ interface AppState {
     registerCompany: (nombre: string, email: string, pass: string, cedula: string, companyName: string, plan?: 'free' | 'premium' | 'enterprise') => Promise<{ success: boolean; reason?: string }>;
     registerUser: (nombre: string, email: string, pass: string, cedula: string, role: UserRole, forceApprove?: boolean, telefono?: string, companyId?: string) => Promise<{ success: boolean; reason?: string }>;
     updateUser: (id: string, data: Partial<User>) => Promise<void>;
+    changePassword: (oldPassword: string, newPassword: string) => Promise<{ success: boolean; reason?: string }>;
     deleteUser: (id: string) => Promise<void>;
     logout: () => Promise<void>;
     deleteOwnAccount: () => Promise<{ success: boolean; reason?: string }>;
@@ -200,6 +202,25 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     deleteUser: async (id) => {
         await deleteDoc(doc(db, 'users', id));
+    },
+
+    changePassword: async (oldPassword, newPassword) => {
+        const fbUser = auth.currentUser;
+        const current = get().user;
+        if (!fbUser || !current) return { success: false, reason: 'No hay sesión activa.' };
+        try {
+            // Re-authenticate before changing the password (Firebase requirement).
+            const cred = EmailAuthProvider.credential(current.email, oldPassword);
+            await reauthenticateWithCredential(fbUser, cred);
+            await updatePassword(fbUser, newPassword);
+            return { success: true };
+        } catch (error: any) {
+            let reason = 'Error al cambiar la contraseña: ' + error.message;
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') reason = 'La contraseña actual es incorrecta.';
+            if (error.code === 'auth/weak-password') reason = 'La nueva contraseña es muy débil (mínimo 6 caracteres).';
+            if (error.code === 'auth/requires-recent-login') reason = 'Por seguridad, vuelve a iniciar sesión e inténtalo de nuevo.';
+            return { success: false, reason };
+        }
     },
 
     completeOnboarding: async () => {
