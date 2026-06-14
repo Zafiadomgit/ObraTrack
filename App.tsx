@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
@@ -162,10 +162,24 @@ function App() {
   // Web Routing Check
   const isWebLarge = Platform.OS === 'web' && window.innerWidth > 768;
 
+  // Dark navigation theme so no white background shows through (e.g. the white
+  // strip on the login screen when the keyboard opens/closes).
+  const navTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      background: COLORS.background,
+      card: COLORS.surface,
+      border: COLORS.border,
+      text: COLORS.white,
+      primary: COLORS.primary,
+    },
+  };
+
   return (
     <SafeAreaProvider>
         <OfflineBanner />
-        <NavigationContainer>
+        <NavigationContainer theme={navTheme}>
           <StatusBar style="light" />
         <Stack.Navigator
           screenOptions={{
@@ -212,10 +226,7 @@ function App() {
               <Stack.Screen
                 name="ProjectDashboard"
                 component={ProjectDashboardScreen}
-                options={({ route }: any) => ({
-                  title: route.params?.projectName || 'Dashboard de Proyecto',
-                  headerBackTitle: 'Volver',
-                })}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="Bitácora"

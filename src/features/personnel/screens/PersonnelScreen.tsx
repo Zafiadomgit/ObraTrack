@@ -132,10 +132,15 @@ export default function PersonnelScreen() {
     const toggleDia = async (worker: Worker, fechaStr: string) => {
         try {
             const companyId = currentUser?.companyId || 'default-company';
-            if (worker.diasTrabajados.includes(fechaStr)) {
-                await quitarDia(worker.id, worker.version || 1, fechaStr, companyId);
+            // Read the LIVE worker from the store so we always use the current
+            // version. Using the modal's captured snapshot caused a "Conflicto"
+            // error when marking a second day (stale version number).
+            const live = usePersonnelStore.getState().workers.find(w => w.id === worker.id) || worker;
+            const currentVersion = live.version || 1;
+            if (live.diasTrabajados.includes(fechaStr)) {
+                await quitarDia(worker.id, currentVersion, fechaStr, companyId);
             } else {
-                await registrarDia(worker.id, worker.version || 1, fechaStr, companyId);
+                await registrarDia(worker.id, currentVersion, fechaStr, companyId);
             }
         } catch (e) {
             console.error('Error toggling day', e);
@@ -327,7 +332,7 @@ export default function PersonnelScreen() {
             {/* ── Crew Import Modal ── */}
             <Modal visible={crewModalVisible} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { paddingBottom: insets.bottom + SPACING.xl }]}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Importar Cuadrilla</Text>
                             <TouchableOpacity onPress={() => setCrewModalVisible(false)}>
@@ -368,7 +373,7 @@ export default function PersonnelScreen() {
             {/* ── Add / Edit Member Modal ── */}
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { paddingBottom: insets.bottom + SPACING.xl }]}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>{editingId ? 'Editar Miembro' : 'Nuevo Miembro'}</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -430,7 +435,7 @@ export default function PersonnelScreen() {
             {/* ── Attendance / Days Worked Modal ── */}
             <Modal visible={attendanceModal} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { paddingBottom: insets.bottom + SPACING.xl }]}>
                         <View style={styles.modalHeader}>
                             <View>
                                 <Text style={styles.modalTitle}>Asistencia</Text>
