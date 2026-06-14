@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { haptic } from '../../../core/utils/haptics';
 import { useAppStore } from '../../../store/appStore';
 import { useProjectStore } from '../../projects/store/projectStore';
 import { useMaterialStore } from '../../materials/store/materialStore';
@@ -190,11 +192,16 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
     const firstName = user?.nombre?.split(' ')[0] ?? 'Usuario';
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
                 {/* ── Header ── */}
-                <View style={styles.header}>
+                <LinearGradient
+                    colors={[COLORS.primaryLight, COLORS.primary, COLORS.primaryDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.header, { paddingTop: insets.top + SPACING.md }]}
+                >
                     <View style={styles.avatarCircle}>
                         <Text style={styles.avatarText}>{firstName.slice(0, 2).toUpperCase()}</Text>
                     </View>
@@ -212,18 +219,18 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                             </TouchableOpacity>
                         )}
                     </View>
-                    <TouchableOpacity onPress={() => navigation.navigate('Notifications' as never)} style={[styles.logoutBtn, { marginRight: SPACING.sm }]}>
-                        <Icon name="bell" size={18} color={COLORS.textSecondary} />
+                    <TouchableOpacity onPress={() => { haptic.light(); navigation.navigate('Notifications' as never); }} style={[styles.logoutBtn, { marginRight: SPACING.sm }]}>
+                        <Icon name="bell" size={18} color={COLORS.white} />
                         {unreadNotificationsCount > 0 && (
                             <View style={styles.notificationBadge}>
                                 <Text style={styles.notificationBadgeText}>{unreadNotificationsCount}</Text>
                             </View>
                         )}
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-                        <Icon name="log-out" size={18} color={COLORS.textSecondary} />
+                    <TouchableOpacity onPress={() => { haptic.light(); logout(); }} style={styles.logoutBtn}>
+                        <Icon name="log-out" size={18} color={COLORS.white} />
                     </TouchableOpacity>
-                </View>
+                </LinearGradient>
 
                 {/* ── Deadline Alerts ── */}
                 {['coordinador', 'lider'].includes(user?.role || '') && stats.projectsWithAlerts.length > 0 && (
@@ -251,19 +258,25 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                 {/* ── Global KPI Stats Row ── */}
                 <View style={styles.statsGrid}>
                     <View style={styles.statCard}>
-                        <Icon name="briefcase" size={20} color={COLORS.primary} />
+                        <View style={[styles.statIconChip, { backgroundColor: COLORS.primary + '22' }]}>
+                            <Icon name="briefcase" size={18} color={COLORS.primary} />
+                        </View>
                         <Text style={styles.statValue}>{stats.activeProjects}</Text>
                         <Text style={styles.statLabel}>Obras activas</Text>
                     </View>
                     {user?.role !== 'logistica' && (
                         <View style={styles.statCard}>
-                            <Icon name="users" size={20} color={COLORS.info} />
+                            <View style={[styles.statIconChip, { backgroundColor: COLORS.info + '22' }]}>
+                                <Icon name="users" size={18} color={COLORS.info} />
+                            </View>
                             <Text style={styles.statValue}>{stats.totalWorkers}</Text>
                             <Text style={styles.statLabel}>Personal</Text>
                         </View>
                     )}
                     <View style={styles.statCard}>
-                        <Icon name="package" size={20} color={stats.stockAlerts > 0 ? COLORS.warning : COLORS.success} />
+                        <View style={[styles.statIconChip, { backgroundColor: (stats.stockAlerts > 0 ? COLORS.warning : COLORS.success) + '22' }]}>
+                            <Icon name="package" size={18} color={stats.stockAlerts > 0 ? COLORS.warning : COLORS.success} />
+                        </View>
                         <Text style={[styles.statValue, stats.stockAlerts > 0 && { color: COLORS.warning }]}>
                             {stats.stockAlerts > 0 ? stats.stockAlerts : stats.totalStock}
                         </Text>
@@ -271,7 +284,9 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                     </View>
                     {user?.role !== 'logistica' && (
                         <View style={styles.statCard}>
-                            <Icon name="book-open" size={20} color={COLORS.textSecondary} />
+                            <View style={[styles.statIconChip, { backgroundColor: COLORS.info + '22' }]}>
+                                <Icon name="book-open" size={18} color={COLORS.info} />
+                            </View>
                             <Text style={styles.statValue}>{stats.bitacorasHoy}</Text>
                             <Text style={styles.statLabel}>Bitácoras hoy</Text>
                         </View>
@@ -406,8 +421,8 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                         { id: 'usuarios', icon: 'user-check' as const, label: 'Usuarios', sub: 'Admin & Personal', color: COLORS.danger, action: () => navigation.navigate('UserManagement' as never), roles: ['admin', 'coordinador'] },
                         { id: 'actividad', icon: 'activity' as const, label: 'Actividad', sub: 'Historial', color: COLORS.info, action: () => navigation.navigate('ActivityHistory' as never), roles: ['admin', 'coordinador'] },
                     ].filter(item => user?.role && item.roles.includes(user.role)).map(item => (
-                        <TouchableOpacity key={item.id} style={styles.quickCard}
-                            onPress={() => item.action ? item.action() : navigation.navigate(item.screen)}>
+                        <TouchableOpacity key={item.id} style={styles.quickCard} activeOpacity={0.85}
+                            onPress={() => { haptic.light(); item.action ? item.action() : navigation.navigate(item.screen); }}>
                             <View style={[styles.quickIconBox, { backgroundColor: item.color + '22' }]}>
                                 <Icon name={item.icon} size={22} color={item.color} />
                             </View>
@@ -438,8 +453,8 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                                 } catch { return null; }
                             })();
                             return (
-                                <TouchableOpacity key={p.id} style={styles.projectCard}
-                                    onPress={() => navigation.navigate('ProjectDashboard', { projectId: p.id, projectName: p.nombreProyecto })}>
+                                <TouchableOpacity key={p.id} style={styles.projectCard} activeOpacity={0.85}
+                                    onPress={() => { haptic.light(); navigation.navigate('ProjectDashboard', { projectId: p.id, projectName: p.nombreProyecto }); }}>
                                     <View style={[styles.projectIconBox, { backgroundColor: COLORS.primary + '22' }]}>
                                         <Icon name="briefcase" size={18} color={COLORS.primary} />
                                     </View>
@@ -571,18 +586,24 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.background },
-    header: { flexDirection: 'row', alignItems: 'center', padding: SPACING.lg, paddingBottom: SPACING.md },
-    avatarCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+    header: {
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg,
+        borderBottomLeftRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl,
+        marginBottom: SPACING.md, ...SHADOWS.md,
+    },
+    avatarCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
     avatarText: { color: COLORS.white, fontWeight: 'bold', fontSize: FONTS.sizes.lg },
-    greetingText: { color: COLORS.textSecondary, fontSize: FONTS.sizes.sm },
+    greetingText: { color: 'rgba(255,255,255,0.85)', fontSize: FONTS.sizes.sm },
     nameText: { color: COLORS.white, fontWeight: 'bold', fontSize: FONTS.sizes.xl },
-    dateText: { color: COLORS.textMuted, fontSize: FONTS.sizes.xs, textTransform: 'capitalize' },
-    logoutBtn: { padding: SPACING.sm, backgroundColor: COLORS.surfaceLight, borderRadius: RADIUS.round },
+    dateText: { color: 'rgba(255,255,255,0.7)', fontSize: FONTS.sizes.xs, textTransform: 'capitalize' },
+    logoutBtn: { padding: SPACING.sm, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: RADIUS.round },
     alertBanner: { flexDirection: 'row', backgroundColor: COLORS.warning + '18', borderRadius: RADIUS.md, padding: SPACING.md, marginHorizontal: SPACING.md, marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.warning + '60' },
     alertTitle: { color: COLORS.warning, fontWeight: 'bold', fontSize: FONTS.sizes.sm, marginBottom: 4 },
     alertItem: { fontSize: FONTS.sizes.xs, marginTop: 2 },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: SPACING.md, gap: SPACING.sm, marginBottom: SPACING.md },
     statCard: { flex: 1, minWidth: '44%', backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: SPACING.md, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.sm },
+    statIconChip: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
     statValue: { color: COLORS.white, fontSize: FONTS.sizes.xxl, fontWeight: 'bold', marginTop: 4 },
     statLabel: { color: COLORS.textMuted, fontSize: 10, marginTop: 2, textAlign: 'center' },
     sectionTitle: { color: COLORS.white, fontSize: FONTS.sizes.lg, fontWeight: 'bold', paddingHorizontal: SPACING.lg, marginBottom: SPACING.sm, marginTop: SPACING.md },

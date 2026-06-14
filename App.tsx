@@ -50,6 +50,7 @@ import { useLogisticsStore } from './src/features/logistics/store/logisticsStore
 import { useEquipmentStore } from './src/features/equipment/store/equipmentStore';
 import { useNotificationStore } from './src/features/notifications/store/notificationStore';
 import OfflineBanner from './src/components/OfflineBanner';
+import { haptic } from './src/core/utils/haptics';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -61,6 +62,7 @@ function AppTabs() {
   const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
+      screenListeners={{ tabPress: () => haptic.light() }}
       screenOptions={({ route: r }) => ({
         tabBarIcon: ({ color, size }) => {
           let iconName: keyof typeof Icon.glyphMap = 'home';
