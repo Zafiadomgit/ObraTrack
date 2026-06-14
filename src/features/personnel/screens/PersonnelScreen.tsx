@@ -33,16 +33,15 @@ export default function PersonnelScreen() {
     const { projectId } = route.params;
     const isGlobal = projectId === 'all';
     const currentUser = useAppStore(state => state.user);
-    const { addWorker, updateWorker, deleteWorker, registrarDia, quitarDia, addCrewToProject, subscribeToPersonnel, unsubscribeFromPersonnel } = usePersonnelStore();
+    const { addWorker, updateWorker, deleteWorker, registrarDia, quitarDia, addCrewToProject, loadPersonnel } = usePersonnelStore();
     const allWorkers = usePersonnelStore(state => state.workers).filter(w => w.userId === currentUser?.id || currentUser?.role === 'admin');
     const crews = usePersonnelStore(state => state.crews).filter(c => !c.userId || c.userId === currentUser?.id || currentUser?.role === 'admin');
 
     React.useEffect(() => {
         if (currentUser) {
             const companyId = currentUser.companyId || 'default-company';
-            subscribeToPersonnel(currentUser.id, companyId, currentUser.role);
+            loadPersonnel(currentUser.id, companyId, currentUser.role);
         }
-        return () => unsubscribeFromPersonnel();
     }, [currentUser]);
 
     const workers = isGlobal ? allWorkers : allWorkers.filter(w => w.projectId === projectId);
@@ -90,8 +89,9 @@ export default function PersonnelScreen() {
     };
 
     const handleSave = async () => {
-        if (!nombre.trim() || !cuadrilla.trim() || isNaN(Number(costoDia))) {
-            Alert.alert('Error', 'Por favor completa los campos correctamente');
+        const parsedCosto = Number(String(costoDia).replace(',', '.'));
+        if (!nombre.trim() || !cuadrilla.trim() || isNaN(parsedCosto) || parsedCosto < 0) {
+            Alert.alert('Error', 'Completa nombre, cuadrilla y un costo por día válido (0 o mayor).');
             return;
         }
 
@@ -107,7 +107,7 @@ export default function PersonnelScreen() {
         }
 
         const companyId = currentUser?.companyId || 'default-company';
-        const data = { nombre, rol, cargo, cuadrilla, costoDia: Number(costoDia), projectId, userId: currentUser?.id || 'unknown', companyId };
+        const data = { nombre, rol, cargo, cuadrilla, costoDia: parsedCosto, projectId, userId: currentUser?.id || 'unknown', companyId };
 
         try {
             if (editingId) {

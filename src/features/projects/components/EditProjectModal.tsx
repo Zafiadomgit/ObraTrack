@@ -6,6 +6,8 @@ import Icon from '@expo/vector-icons/Feather';
 import { useProjectStore, Project } from '../store/projectStore';
 import { ProjectType, PROJECT_TYPE_ICONS, PROJECT_TYPE_LABELS } from '../../materials/data/standardMaterials';
 import { useAppStore } from '../../../store/appStore';
+import { isValidDateString } from '../../../core/utils/formatters';
+import { Alert } from 'react-native';
 
 interface EditProjectModalProps {
     visible: boolean;
@@ -34,16 +36,29 @@ export default function EditProjectModal({ visible, onClose, project }: EditProj
         }
     }, [visible, project]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (fechaInicio.trim() && !isValidDateString(fechaInicio)) {
+            Alert.alert('Fecha inválida', 'La fecha de inicio debe ser una fecha real con formato AAAA-MM-DD');
+            return;
+        }
+        if (fechaFin.trim() && !isValidDateString(fechaFin)) {
+            Alert.alert('Fecha inválida', 'La fecha de fin debe ser una fecha real con formato AAAA-MM-DD');
+            return;
+        }
+
         const companyId = user?.companyId || 'default-company';
-        updateProject(project.id, project.version || 1, {
-            nombreProyecto: nombre,
-            ubicacion,
-            fechaInicio,
-            fechaFin: fechaFin.trim() === '' ? undefined : fechaFin,
-            tipoProyecto
-        }, companyId);
-        onClose();
+        try {
+            await updateProject(project.id, project.version || 1, {
+                nombreProyecto: nombre,
+                ubicacion,
+                fechaInicio: fechaInicio.trim(),
+                fechaFin: fechaFin.trim() === '' ? undefined : fechaFin.trim(),
+                tipoProyecto
+            }, companyId);
+            onClose();
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo guardar el proyecto. Inténtalo de nuevo.');
+        }
     };
 
     return (

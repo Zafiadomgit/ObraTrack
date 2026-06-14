@@ -2,6 +2,21 @@ import { create } from 'zustand';
 import { auth, db, secondaryAuth } from '../config/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence, deleteUser as deleteFirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+
+// Remove any stored biometric credentials (native only).
+const clearBiometricCredentials = async () => {
+    if (Platform.OS === 'web') return;
+    try {
+        await SecureStore.deleteItemAsync('bioEmail');
+        await SecureStore.deleteItemAsync('bioPassword');
+        await AsyncStorage.setItem('biometricEnabled', 'false');
+    } catch (e) {
+        console.error('Error clearing biometric credentials', e);
+    }
+};
 
 export type UserRole = 'admin' | 'coordinador' | 'lider' | 'conductor' | 'logistica';
 
@@ -94,6 +109,16 @@ export const useAppStore = create<AppState>((set, get) => ({
                 fechaRegistro: today(),
                 hasCompletedOnboarding: false,
             };
+
+            // Anchor company ownership FIRST so the user-doc security rule can verify
+            // that this admin legitimately owns the (brand new) company. Must run
+            // before the user doc so get(company).ownerId is committed and visible.
+            await setDoc(doc(db, 'companies', companyId), {
+                ownerId: uid,
+                companyName,
+                plan,
+                createdAt: Date.now(),
+            });
 
             await setDoc(doc(db, 'users', uid), newAdmin);
             set({ user: newAdmin });
@@ -192,6 +217,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     },
 
     logout: async () => {
+        await clearBiometricCredentials();
         await signOut(auth);
         set({ user: null });
     },
@@ -203,6 +229,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             await deleteDoc(doc(db, 'users', current.id));
             const firebaseUser = auth.currentUser;
             if (firebaseUser) await deleteFirebaseUser(firebaseUser);
+            await clearBiometricCredentials();
             set({ user: null });
             return { success: true };
         } catch (error: any) {

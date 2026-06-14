@@ -28,11 +28,16 @@ export default function OnboardingScreen() {
         if (step < ONBOARDING_STEPS.length - 1) {
             setStep(step + 1);
         } else {
-            await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
-            if (currentUser) {
-                await initializeCentralWarehouse(currentUser.id, currentUser.companyId || 'default-company');
+            try {
+                await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+                if (currentUser) {
+                    await initializeCentralWarehouse(currentUser.id, currentUser.companyId || 'default-company');
+                }
+                await completeOnboarding();
+            } catch (error) {
+                console.error('Onboarding failed:', error);
+                alert(t.error || 'No se pudo completar la introducción. Inténtalo de nuevo.');
             }
-            await completeOnboarding();
         }
     };
 

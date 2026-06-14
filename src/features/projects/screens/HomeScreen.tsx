@@ -6,6 +6,7 @@ import { useAppStore } from '../../../store/appStore';
 import { useProjectStore, Project } from '../store/projectStore';
 import { useMaterialStore } from '../../materials/store/materialStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
+import { isValidDateString } from '../../../core/utils/formatters';
 import Icon from '@expo/vector-icons/Feather';
 import GlobalFAB from '../../../components/GlobalFAB';
 import EmptyState from '../../../components/EmptyState';
@@ -104,9 +105,9 @@ export default function HomeScreen({ navigation: propNavigation }: any) {
             Alert.alert('Campos requeridos', 'Por favor completa nombre y ubicación del proyecto.');
             return;
         }
-        // Validate date format
-        if (newFechaFin && !/^\d{4}-\d{2}-\d{2}$/.test(newFechaFin)) {
-            Alert.alert('Formato de fecha', 'La fecha de fin debe tener formato AAAA-MM-DD');
+        // Validate date is a real calendar date (rejects 2026-13-45, 2026-02-30, etc.)
+        if (newFechaFin.trim() && !isValidDateString(newFechaFin)) {
+            Alert.alert('Fecha inválida', 'La fecha de fin debe ser una fecha real con formato AAAA-MM-DD');
             return;
         }
 

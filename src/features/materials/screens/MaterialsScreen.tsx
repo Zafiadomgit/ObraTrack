@@ -168,6 +168,23 @@ export default function MaterialsScreen(props: any) {
         if (!newNombre.trim() || !newUnidad.trim()) return;
         const companyId = currentUser?.companyId || 'default-company';
 
+        // Validate numeric fields: empty is allowed (defaults to 0), but any
+        // non-empty value must be a real, non-negative number (never NaN).
+        const numericFields: { label: string; value: string }[] = [
+            { label: 'costo unitario', value: newCosto },
+            { label: 'mínimo de alerta', value: newAlerta },
+            { label: 'cantidad mínima en obra', value: newStandardQty },
+        ];
+        for (const field of numericFields) {
+            const raw = field.value.trim();
+            if (raw === '') continue;
+            const parsed = Number(raw.replace(',', '.'));
+            if (isNaN(parsed) || parsed < 0) {
+                Alert.alert('Valor inválido', `El campo "${field.label}" debe ser un número válido (0 o mayor).`);
+                return;
+            }
+        }
+
         useMaterialStore.getState().addMaterial({
             projectId,
             companyId: currentUser?.companyId || 'default-company',
@@ -175,9 +192,9 @@ export default function MaterialsScreen(props: any) {
             nombre: newNombre,
             unidad: newUnidad,
             categoria: newCategoria,
-            costoUnitario: Number(newCosto) || 0,
-            minimoAlerta: Number(newAlerta) || 0,
-            stockMinimoObra: Number(newStandardQty) || 0,
+            costoUnitario: Number(newCosto.replace(',', '.')) || 0,
+            minimoAlerta: Number(newAlerta.replace(',', '.')) || 0,
+            stockMinimoObra: Number(newStandardQty.replace(',', '.')) || 0,
             proveedor: newProveedor || undefined,
         }, companyId);
 
@@ -468,11 +485,11 @@ export default function MaterialsScreen(props: any) {
 
                     {suppliers.map(sup => (
                         <TouchableOpacity
-                            key={sup}
-                            style={[styles.filterChip, filter === 'supplier' && selectedSupplier === sup && styles.filterChipActive]}
-                            onPress={() => { setFilter('supplier'); setSelectedSupplier(sup); }}
+                            key={sup.id}
+                            style={[styles.filterChip, filter === 'supplier' && selectedSupplier === sup.name && styles.filterChipActive]}
+                            onPress={() => { setFilter('supplier'); setSelectedSupplier(sup.name); }}
                         >
-                            <Text style={[styles.filterChipText, filter === 'supplier' && selectedSupplier === sup && styles.filterChipTextActive]}>{sup}</Text>
+                            <Text style={[styles.filterChipText, filter === 'supplier' && selectedSupplier === sup.name && styles.filterChipTextActive]}>{sup.name}</Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -646,11 +663,11 @@ export default function MaterialsScreen(props: any) {
                                     </TouchableOpacity>
                                     {suppliers.map(sup => (
                                         <TouchableOpacity
-                                            key={sup}
-                                            style={[styles.choiceChip, newProveedor === sup && styles.choiceChipActive]}
-                                            onPress={() => setNewProveedor(sup)}
+                                            key={sup.id}
+                                            style={[styles.choiceChip, newProveedor === sup.name && styles.choiceChipActive]}
+                                            onPress={() => setNewProveedor(sup.name)}
                                         >
-                                            <Text style={[styles.choiceChipText, newProveedor === sup && styles.choiceChipTextActive]}>{sup}</Text>
+                                            <Text style={[styles.choiceChipText, newProveedor === sup.name && styles.choiceChipTextActive]}>{sup.name}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </ScrollView>
