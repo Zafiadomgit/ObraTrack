@@ -7,6 +7,7 @@ import { useAppStore } from '../../../store/appStore';
 import { useProjectStore } from '../../projects/store/projectStore';
 import Icon from '@expo/vector-icons/Feather';
 import GlobalFAB from '../../../components/GlobalFAB';
+import ScreenHeader from '../../../components/ScreenHeader';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -413,6 +414,11 @@ export default function MaterialsScreen(props: any) {
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+            <ScreenHeader
+                title={isGlobal ? 'Bodega Central' : 'Materiales'}
+                subtitle={`${materials.length} ${materials.length === 1 ? 'material' : 'materiales'}`}
+                icon={isGlobal ? 'package' : 'box'}
+            />
             <View style={styles.tabsContainer}>
                 <TouchableOpacity
                     style={[styles.tabBtn, activeTab === 'stock' && styles.tabBtnActive]}

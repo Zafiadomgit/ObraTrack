@@ -238,17 +238,17 @@ function App() {
               <Stack.Screen
                 name="Personal"
                 component={PersonnelScreen}
-                options={{ title: 'Personal', headerBackTitle: 'Atrás' }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="Materiales"
                 component={MaterialsScreen}
-                options={{ title: 'Materiales', headerBackTitle: 'Atrás' }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="Equipos"
                 component={EquipmentScreen}
-                options={{ title: 'Equipos', headerBackTitle: 'Atrás' }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="Envíos"
@@ -258,7 +258,7 @@ function App() {
               <Stack.Screen
                 name="Reportes"
                 component={ReportsScreen}
-                options={{ title: 'Reportes', headerBackTitle: 'Atrás' }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="UserManagement"

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
+import { LinearGradient } from 'expo-linear-gradient';
+import { haptic } from '../../../core/utils/haptics';
 import { analytics } from '../../../core/services/analyticsService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../../../store/appStore';
@@ -49,6 +51,7 @@ export default function LoginScreen() {
         try {
             const result = await login(email.trim(), password);
             if (result.success) {
+                haptic.success();
                 analytics.trackLogin('email');
                 // Persist credentials securely so the user can re-login with biometrics.
                 if (Platform.OS !== 'web') {
@@ -61,6 +64,7 @@ export default function LoginScreen() {
                     }
                 }
             } else {
+                haptic.error();
                 alert(result.reason || t.error);
             }
         } finally {
@@ -152,12 +156,14 @@ export default function LoginScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={[styles.loginBtn, loading && { opacity: 0.6 }]} onPress={handleLogin} disabled={loading}>
-                        {loading ? (
-                            <ActivityIndicator color={COLORS.white} />
-                        ) : (
-                            <Text style={styles.loginText}>{t.signIn}</Text>
-                        )}
+                    <TouchableOpacity style={loading && { opacity: 0.6 }} onPress={handleLogin} disabled={loading} activeOpacity={0.85}>
+                        <LinearGradient colors={[COLORS.primaryLight, COLORS.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.loginBtn}>
+                            {loading ? (
+                                <ActivityIndicator color={COLORS.white} />
+                            ) : (
+                                <Text style={styles.loginText}>{t.signIn}</Text>
+                            )}
+                        </LinearGradient>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.forgotBtn} onPress={() => (navigation as any).navigate('ForgotPassword')} disabled={loading}>

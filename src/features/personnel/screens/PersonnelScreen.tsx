@@ -12,6 +12,8 @@ import Icon from '@expo/vector-icons/Feather';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ExportService } from '../../../core/services/exportService';
+import ScreenHeader from '../../../components/ScreenHeader';
+import { haptic } from '../../../core/utils/haptics';
 
 const ROLE_LABELS: Record<MemberRole, string> = {
     lider: '👷 Líder',
@@ -75,6 +77,7 @@ export default function PersonnelScreen() {
     const [attendanceModal, setAttendanceModal] = useState(false);
 
     const openAdd = () => {
+        haptic.light();
         setEditingId(null);
         setEditingVersion(1);
         setNombre(''); setRol('tecnico'); setCargo('Técnico'); setCuadrilla('Cuadrilla A'); setCostoDia('');
@@ -115,6 +118,7 @@ export default function PersonnelScreen() {
             } else {
                 await addWorker(data, companyId);
             }
+            haptic.success();
             setModalVisible(false);
         } catch (e) {
             Alert.alert('Error', 'No se pudo guardar la información.');
@@ -156,6 +160,7 @@ export default function PersonnelScreen() {
         try {
             const companyId = currentUser?.companyId || 'default-company';
             await addCrewToProject(crewId, projectId, currentUser?.id || 'unknown', companyId);
+            haptic.success();
             setCrewModalVisible(false);
             Alert.alert('Éxito', 'Cuadrilla importada correctamente');
         } catch (e) {
@@ -262,6 +267,11 @@ export default function PersonnelScreen() {
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+            <ScreenHeader
+                title={isGlobal ? 'Personal Global' : 'Personal'}
+                subtitle={`${totalWorkers} miembro${totalWorkers !== 1 ? 's' : ''} · ${cuadrillas.length} cuadrilla${cuadrillas.length !== 1 ? 's' : ''}`}
+                icon="users"
+            />
             {/* Totals Banner */}
             <View style={styles.banner}>
                 <View style={styles.bannerItem}>
@@ -314,7 +324,7 @@ export default function PersonnelScreen() {
                     <>
                         <TouchableOpacity
                             style={[styles.fab, { position: 'relative', bottom: 0, right: 0, backgroundColor: COLORS.info }]}
-                            onPress={() => setCrewModalVisible(true)}
+                            onPress={() => { haptic.light(); setCrewModalVisible(true); }}
                         >
                             <Icon name="users" size={22} color={COLORS.white} />
                         </TouchableOpacity>

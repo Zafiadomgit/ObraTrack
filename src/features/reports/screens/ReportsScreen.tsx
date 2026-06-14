@@ -8,6 +8,7 @@ import { usePersonnelStore } from '../../personnel/store/personnelStore';
 import { useMaterialStore } from '../../materials/store/materialStore';
 import { pdfService } from '../services/pdfService';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
+import ScreenHeader from '../../../components/ScreenHeader';
 import { useSubscription } from '../../auth/hooks/useSubscription';
 import Icon from '@expo/vector-icons/Feather';
 import { format, subDays, addDays, isSameDay } from 'date-fns';
@@ -214,7 +215,9 @@ export default function ReportsScreen() {
     }
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
+        <View style={styles.screen}>
+            <ScreenHeader title="Reportes" subtitle={project?.nombreProyecto} icon="file-text" />
+            <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
             <View style={styles.headerCard}>
                 <Text style={styles.sectionTitle}>Generar Informe Diario</Text>
 
@@ -339,11 +342,13 @@ export default function ReportsScreen() {
                     </View>
                 </View>
             </Modal>
-        </ScrollView>
+            </ScrollView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    screen: { flex: 1, backgroundColor: COLORS.background },
     container: { flex: 1, backgroundColor: COLORS.background },
 
     headerCard: {

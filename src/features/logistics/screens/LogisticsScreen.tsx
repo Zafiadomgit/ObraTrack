@@ -9,6 +9,7 @@ import { es } from 'date-fns/locale';
 
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import { isValidDateString } from '../../../core/utils/formatters';
+import ScreenHeader from '../../../components/ScreenHeader';
 import { useLogisticsStore, Shipment, ShipmentMaterial } from '../store/logisticsStore';
 import { useAppStore } from '../../../store/appStore';
 import { useProjectStore } from '../../projects/store/projectStore';
@@ -297,15 +298,8 @@ export default function LogisticsScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: isTab ? 0 : insets.top }]}>
-            {!isTab && (
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : null} style={styles.backBtn}>
-                        <Icon name="arrow-left" size={24} color={COLORS.white} />
-                    </TouchableOpacity>
-                    <Text style={styles.title}>Logística de Envíos</Text>
-                </View>
-            )}
+        <View style={styles.container}>
+            <ScreenHeader title="Logística de Envíos" subtitle="Despachos y rastreo" icon="truck" />
 
             {/* TABS */}
             <View style={styles.tabsContainer}>

@@ -10,6 +10,8 @@ import { useEquipmentStore, Equipment, EquipmentStatus, EquipmentCategory } from
 import { useAppStore } from '../../../store/appStore';
 import Icon from '@expo/vector-icons/Feather';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
+import ScreenHeader from '../../../components/ScreenHeader';
+import { haptic } from '../../../core/utils/haptics';
 
 const STATUS_COLORS: Record<EquipmentStatus, string> = {
     disponible: COLORS.success,
@@ -164,17 +166,16 @@ export default function EquipmentScreen(props: any) {
     );
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.title}>Equipos</Text>
-                    <Text style={styles.subtitle}>{equipment.length} equipos registrados</Text>
-                </View>
-                <TouchableOpacity style={styles.addBtn} onPress={() => { resetForm(); setAddModal(true); }}>
-                    <Icon name="plus" size={22} color={COLORS.white} />
-                </TouchableOpacity>
-            </View>
+        <View style={styles.container}>
+            <ScreenHeader
+                title="Equipos"
+                subtitle={`${equipment.length} equipos registrados`}
+                right={
+                    <TouchableOpacity style={styles.headerAddBtn} onPress={() => { haptic.medium(); resetForm(); setAddModal(true); }}>
+                        <Icon name="plus" size={22} color={COLORS.white} />
+                    </TouchableOpacity>
+                }
+            />
 
             {/* Search + Filters */}
             <View style={styles.searchRow}>
@@ -386,6 +387,7 @@ const styles = StyleSheet.create({
     title: { color: COLORS.white, fontSize: FONTS.sizes.xl, fontWeight: '900' },
     subtitle: { color: COLORS.textMuted, fontSize: FONTS.sizes.sm },
     addBtn: { width: 48, height: 48, borderRadius: RADIUS.round, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', ...SHADOWS.md },
+    headerAddBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
 
     searchRow: { paddingHorizontal: SPACING.md, marginBottom: SPACING.sm },
     searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, borderWidth: 1, borderColor: COLORS.border, height: 44, gap: 8 },

@@ -4,6 +4,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppStore, UserRole } from '../../../store/appStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
+import { LinearGradient } from 'expo-linear-gradient';
+import { haptic } from '../../../core/utils/haptics';
 import { analytics } from '../../../core/services/analyticsService';
 import { useT } from '../../../core/i18n';
 
@@ -70,14 +72,17 @@ export default function RegisterScreen() {
                 const selectedPlan = route.params?.selectedPlan || 'free';
                 const result = await registerCompany(nombre, cleanEmail, password, cedula, companyName, selectedPlan);
                 if (result.success) {
+                    haptic.success();
                     analytics.trackSignUp('admin');
                     showAlert(t.companyCreated, t.welcomeAdmin);
                 } else {
+                    haptic.error();
                     showAlert(t.error, result.reason || t.registerError);
                 }
             } else {
                 const result = await registerUser(nombre, cleanEmail, password, cedula, selectedRole, false, '', companyCode.trim());
                 if (result.success) {
+                    haptic.success();
                     analytics.trackSignUp(selectedRole);
                     showAlert(
                         t.requestSent,
@@ -92,6 +97,7 @@ export default function RegisterScreen() {
                         }}]
                     );
                 } else {
+                    haptic.error();
                     showAlert(t.error, result.reason || t.registerError);
                 }
             }
@@ -241,12 +247,14 @@ export default function RegisterScreen() {
 
                 </View>
 
-                <TouchableOpacity style={[styles.registerBtn, loading && { opacity: 0.6 }]} onPress={handleRegister} disabled={loading}>
-                    {loading ? (
-                        <ActivityIndicator color={COLORS.white} />
-                    ) : (
-                        <Text style={styles.registerText}>{t.signUp}</Text>
-                    )}
+                <TouchableOpacity style={loading && { opacity: 0.6 }} onPress={handleRegister} disabled={loading} activeOpacity={0.85}>
+                    <LinearGradient colors={[COLORS.primaryLight, COLORS.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.registerBtn}>
+                        {loading ? (
+                            <ActivityIndicator color={COLORS.white} />
+                        ) : (
+                            <Text style={styles.registerText}>{t.signUp}</Text>
+                        )}
+                    </LinearGradient>
                 </TouchableOpacity>
 
                 <View style={styles.footer}>
