@@ -7,6 +7,7 @@ import { useAppStore } from '../../../store/appStore';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
+import ScreenHeader from '../../../components/ScreenHeader';
 import { collection, query, where, orderBy, limit, getDocs, startAfter, QueryDocumentSnapshot, DocumentData, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { format } from 'date-fns';
@@ -20,7 +21,7 @@ import { Alert } from 'react-native';
 
 export default function DailyLogScreen() {
     const route = useRoute<any>();
-    const { projectId } = route.params;
+    const { projectId } = route.params ?? {};
     const currentUser = useAppStore(state => state.user);
     
     // We combine local offline entries from reportStore with fetched Firestore entries
@@ -366,6 +367,7 @@ export default function DailyLogScreen() {
 
     return (
         <View style={styles.container}>
+            <ScreenHeader title="Bitácora" subtitle={route.params?.projectName} icon="book-open" />
             <FlatList
                 data={logs}
                 renderItem={renderLog}

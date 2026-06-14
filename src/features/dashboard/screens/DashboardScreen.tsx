@@ -251,7 +251,7 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                                     const label = days < 0 ? `Venció hace ${Math.abs(days)} días` : days === 0 ? 'Vence HOY' : `Vence en ${days} días`;
                                     const color = days <= 0 ? COLORS.danger : COLORS.warning;
                                     return (
-                                        <TouchableOpacity key={p.id} onPress={() => navigation.navigate('Proyectos', { screen: 'Projects' })}>
+                                        <TouchableOpacity key={p.id} onPress={() => { haptic.light(); navigation.navigate('ProjectDashboard', { projectId: p.id, projectName: p.nombreProyecto }); }}>
                                             <Text style={[styles.alertItem, { color }]}>• {p.nombreProyecto}: {label}</Text>
                                         </TouchableOpacity>
                                     );

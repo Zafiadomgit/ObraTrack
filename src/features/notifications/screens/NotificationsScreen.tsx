@@ -1,17 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import { useNotificationStore } from '../store/notificationStore';
 import { useAppStore } from '../../../store/appStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
+import ScreenHeader from '../../../components/ScreenHeader';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function NotificationsScreen() {
-    const insets = useSafeAreaInsets();
-    const navigation = useNavigation();
     const user = useAppStore(state => state.user);
     const { notifications, markAsRead, markAllAsRead } = useNotificationStore();
 
@@ -53,18 +50,15 @@ export default function NotificationsScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Icon name="arrow-left" size={24} color={COLORS.white} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Notificaciones</Text>
-                {notifications.some(n => !n.read) && (
+        <View style={styles.container}>
+            <ScreenHeader
+                title="Notificaciones"
+                right={notifications.some(n => !n.read) ? (
                     <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
-                        <Icon name="check-square" size={18} color={COLORS.primary} />
+                        <Icon name="check-square" size={18} color={COLORS.white} />
                     </TouchableOpacity>
-                )}
-            </View>
+                ) : undefined}
+            />
 
             {notifications.length === 0 ? (
                 <View style={styles.center}>
@@ -89,7 +83,7 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.border },
     backBtn: { marginRight: SPACING.md, padding: 4 },
     headerTitle: { flex: 1, fontSize: FONTS.sizes.xl, fontWeight: 'bold', color: COLORS.white },
-    markAllBtn: { padding: 4 },
+    markAllBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyText: { color: COLORS.textMuted, marginTop: SPACING.md, fontSize: FONTS.sizes.md },
     listContent: { padding: SPACING.md },

@@ -4,7 +4,6 @@ import {
     TextInput, ScrollView, Alert, Platform, Image
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useEquipmentStore, Equipment, EquipmentStatus, EquipmentCategory } from '../store/equipmentStore';
 import { useAppStore } from '../../../store/appStore';
@@ -36,7 +35,6 @@ const CAT_LABELS: Record<EquipmentCategory, string> = {
 };
 
 export default function EquipmentScreen(props: any) {
-    const insets = useSafeAreaInsets();
     const navRoute = useRoute<any>();
     const currentRoute = props.route?.params ? props.route : navRoute;
     const projectId = currentRoute?.params?.projectId || 'central';

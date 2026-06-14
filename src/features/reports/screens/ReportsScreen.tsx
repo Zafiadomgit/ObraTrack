@@ -19,7 +19,7 @@ import { exportService } from '../services/exportService';
 
 export default function ReportsScreen() {
     const route = useRoute<any>();
-    const { projectId } = route.params;
+    const { projectId } = route.params ?? {};
     const { user } = useAppStore();
     const project = useProjectStore(state => state.projects).find(p => p.id === projectId && p.userId === user?.id);
     const dailyLogs = useReportStore(state => state.dailyLogs).filter(l => l.projectId === projectId && l.userId === user?.id);

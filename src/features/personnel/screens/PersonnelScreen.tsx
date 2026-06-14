@@ -32,7 +32,7 @@ const CUADRILLA_NAMES = ['Cuadrilla A', 'Cuadrilla B', 'Cuadrilla C', 'Cuadrilla
 export default function PersonnelScreen() {
     const insets = useSafeAreaInsets();
     const route = useRoute<any>();
-    const { projectId } = route.params;
+    const { projectId } = route.params ?? {};
     const isGlobal = projectId === 'all';
     const currentUser = useAppStore(state => state.user);
     const { addWorker, updateWorker, deleteWorker, registrarDia, quitarDia, addCrewToProject, loadPersonnel } = usePersonnelStore();

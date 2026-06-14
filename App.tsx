@@ -235,7 +235,7 @@ function App() {
               <Stack.Screen
                 name="Bitácora"
                 component={DailyLogScreen}
-                options={{ title: 'Bitácora', headerBackTitle: 'Atrás' }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="Personal"
@@ -280,6 +280,11 @@ function App() {
               <Stack.Screen
                 name="Subscription"
                 component={SubscriptionScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Profile"
+                component={ProfileScreen}
                 options={{ headerShown: false }}
               />
             </>
