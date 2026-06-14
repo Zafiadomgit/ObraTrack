@@ -24,7 +24,7 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
     const projects = allProjects.filter(p => p.userId === user?.id);
     const allMaterials = useMaterialStore(state => state.materials);
     const materials = allMaterials.filter(m => m.userId === user?.id);
-    const { crews, addCrew } = usePersonnelStore();
+    const { crews, addCrew, deleteCrew } = usePersonnelStore();
     // Filter crews by userId if we add that field later, for now we will assume crews are global per company/device or we can filter them if they have userId:
     const userCrews = crews.filter(c => !c.userId || c.userId === user?.id);
 
@@ -74,6 +74,25 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
 
     const removeMemberRow = (index: number) => {
         setNewCrewMembers(newCrewMembers.filter((_, i) => i !== index));
+    };
+
+    // Tap a saved crew template to see its members and optionally delete it.
+    const showCrewDetail = (c: typeof userCrews[number]) => {
+        const members = c.miembros
+            .map(m => `• ${m.nombre || 'Sin nombre'} — ${m.cargo} ($${(m.costoDia || 0).toLocaleString()}/día)`)
+            .join('\n');
+        Alert.alert(
+            c.nombre,
+            `${c.miembros.length} integrante${c.miembros.length !== 1 ? 's' : ''}:\n\n${members || 'Sin integrantes'}`,
+            [
+                {
+                    text: 'Eliminar plantilla',
+                    style: 'destructive',
+                    onPress: () => deleteCrew(c.id, user?.companyId || 'default-company'),
+                },
+                { text: 'Cerrar', style: 'cancel' },
+            ]
+        );
     };
 
     // ── Global aggregated KPIs ──────────────────────────────────────
@@ -260,7 +279,7 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                 </View>
 
                 {/* ── Crew Templates ── */}
-                {['coordinador', 'lider'].includes(user?.role || '') && (
+                {['admin', 'coordinador', 'lider'].includes(user?.role || '') && (
                     <>
                         <View style={styles.sectionHeader}>
                             <Text style={styles.sectionTitle}>Tus Cuadrillas Rápidas</Text>
@@ -279,13 +298,13 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
                                 </View>
                             ) : (
                                 userCrews.map(c => (
-                                    <View key={c.id} style={styles.crewTemplateCard}>
+                                    <TouchableOpacity key={c.id} style={styles.crewTemplateCard} onPress={() => showCrewDetail(c)}>
                                         <View style={[styles.crewIcon, { backgroundColor: COLORS.info + '22' }]}>
                                             <Icon name="users" size={16} color={COLORS.info} />
                                         </View>
                                         <Text style={styles.crewName}>{c.nombre}</Text>
                                         <Text style={styles.crewMembers}>{c.miembros.length} Integrantes</Text>
-                                    </View>
+                                    </TouchableOpacity>
                                 ))
                             )}
                         </ScrollView>
