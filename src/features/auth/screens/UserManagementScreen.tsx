@@ -110,8 +110,14 @@ export default function UserManagementScreen({ navigation: propNavigation }: any
     };
 
     const handleCreateSubUser = async () => {
-        if (!nombre || !email || !password || !cedula || !telefono) {
-            Alert.alert('Incompleto', 'Llena todos los campos, incluyendo el teléfono.');
+        const missing: string[] = [];
+        if (!nombre.trim()) missing.push('Nombre');
+        if (!cedula.trim()) missing.push('Cédula');
+        if (!telefono.trim()) missing.push('Teléfono');
+        if (!email.trim()) missing.push('Correo');
+        if (!password) missing.push('Contraseña');
+        if (missing.length > 0) {
+            Alert.alert('Campos incompletos', `Falta por llenar: ${missing.join(', ')}.`);
             return;
         }
         if (password.length < 6) { return Alert.alert('Error', 'Contraseña muy corta'); }
@@ -133,7 +139,7 @@ export default function UserManagementScreen({ navigation: propNavigation }: any
             return;
         }
 
-        const result = await registerUser(nombre, email, password, cedula, role, true, telefono, compId);
+        const result = await registerUser(nombre.trim(), email.trim(), password, cedula.trim(), role, true, telefono.trim(), compId);
         if (result.success) {
             Alert.alert('Usuario Creado', `${nombre} ahora tiene acceso como ${role}.`);
             setNombre(''); setCedula(''); setTelefono(''); setEmail(''); setPassword('');
@@ -338,11 +344,11 @@ export default function UserManagementScreen({ navigation: propNavigation }: any
                                 : 'Como coordinador, los usuarios que crees aquí ya estarán aprobados y podrán ingresar inmediatamente.'}
                         </Text>
 
-                        <TextInput style={styles.input} placeholder="Nombre Completo" placeholderTextColor={COLORS.textMuted} value={nombre} onChangeText={setNombre} />
-                        <TextInput style={styles.input} placeholder="Cédula" placeholderTextColor={COLORS.textMuted} value={cedula} onChangeText={setCedula} keyboardType="numeric" />
+                        <TextInput style={styles.input} placeholder="Nombre Completo *" placeholderTextColor={COLORS.textMuted} value={nombre} onChangeText={setNombre} />
+                        <TextInput style={styles.input} placeholder="Cédula *" placeholderTextColor={COLORS.textMuted} value={cedula} onChangeText={setCedula} keyboardType="numeric" />
                         <TextInput style={styles.input} placeholder="Teléfono *" placeholderTextColor={COLORS.textMuted} value={telefono} onChangeText={setTelefono} keyboardType="phone-pad" />
-                        <TextInput style={styles.input} placeholder="Correo Electrónico" placeholderTextColor={COLORS.textMuted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-                        <TextInput style={styles.input} placeholder="Controles Temporales (Contraseña)" placeholderTextColor={COLORS.textMuted} value={password} onChangeText={setPassword} secureTextEntry />
+                        <TextInput style={styles.input} placeholder="Correo Electrónico *" placeholderTextColor={COLORS.textMuted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+                        <TextInput style={styles.input} placeholder="Contraseña temporal *" placeholderTextColor={COLORS.textMuted} value={password} onChangeText={setPassword} secureTextEntry />
 
                         <Text style={styles.label}>Rol de Acceso:</Text>
                         <View style={styles.roleContainer}>
