@@ -11,6 +11,8 @@ import Icon from '@expo/vector-icons/Feather';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import ScreenHeader from '../../../components/ScreenHeader';
 import { haptic } from '../../../core/utils/haptics';
+import { useVisibleUsers } from '../../../core/hooks/useVisibleUsers';
+import { useCompanyStore } from '../../../store/companyStore';
 
 const STATUS_COLORS: Record<EquipmentStatus, string> = {
     disponible: COLORS.success,
@@ -42,8 +44,13 @@ export default function EquipmentScreen(props: any) {
     const currentUser = useAppStore(state => state.user);
     const allEquipment = useEquipmentStore(state => state.equipment);
     const { addEquipment, updateEquipment, deleteEquipment, updateStatus } = useEquipmentStore();
+    const { canSee } = useVisibleUsers();
 
-    const equipment = allEquipment.filter(e => e.projectId === projectId && (e.userId === currentUser?.id || currentUser?.role === 'admin'));
+    React.useEffect(() => {
+        if (currentUser?.companyId) useCompanyStore.getState().loadMembers(currentUser.companyId);
+    }, [currentUser?.companyId]);
+
+    const equipment = allEquipment.filter(e => e.projectId === projectId && canSee(e.userId));
 
     // Filter / search
     const [search, setSearch] = useState('');

@@ -8,6 +8,7 @@ import { useProjectStore } from '../../projects/store/projectStore';
 import Icon from '@expo/vector-icons/Feather';
 import GlobalFAB from '../../../components/GlobalFAB';
 import ScreenHeader from '../../../components/ScreenHeader';
+import { useVisibleUsers } from '../../../core/hooks/useVisibleUsers';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,6 +23,7 @@ export default function MaterialsScreen(props: any) {
     const projectId = currentRoute?.params?.projectId || 'central';
     const isGlobal = projectId === 'central';
     const currentUser = useAppStore(state => state.user);
+    const { canSee } = useVisibleUsers();
     const allMaterials = useMaterialStore(state => state.materials);
     const projects = useProjectStore(state => state.projects);
     const { deleteMaterial, enviarAObra, confirmarLlegada, restoreCentralCatalog } = useMaterialStore();
@@ -62,7 +64,7 @@ export default function MaterialsScreen(props: any) {
 
     const materials = allMaterials.filter(m => {
         if (m.projectId !== projectId) return false;
-        if (currentUser?.role !== 'admin' && m.userId !== currentUser?.id) return false;
+        if (!canSee(m.userId)) return false;
         if (filter === 'low') {
             const isLow = activeTab === 'stock' ? (m.stock <= m.minimoAlerta) : (m.cantidadActual < m.stockMinimoObra);
             return isLow;

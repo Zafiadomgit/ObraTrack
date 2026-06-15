@@ -57,11 +57,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         set({ loading: true, hasMore: true });
 
         try {
-            let q = collection(db, `companies/${companyId}/projects`) as any;
-            if (role !== 'superAdmin') {
-                q = query(q, where('userId', '==', userId));
-            }
-            q = query(q, limit(15)); // No orderBy to avoid complex index requirements initially, relying on default ID sort
+            // Load the whole company; role-based visibility is applied client-side
+            // (see useVisibleUsers) so higher roles can see lower roles' records.
+            const q = query(collection(db, `companies/${companyId}/projects`), limit(50));
 
             const snapshot = await getDocs(q);
             const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Project));
@@ -69,8 +67,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             set({ 
                 projects: loaded, 
                 lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
-                hasMore: snapshot.docs.length === 15,
-                loading: false 
+                hasMore: snapshot.docs.length === 50,
+                loading: false
             });
         } catch (error) {
             ErrorService.handleError(error, 'Load Projects');
@@ -85,11 +83,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         set({ loadingMore: true });
 
         try {
-            let q = collection(db, `companies/${companyId}/projects`) as any;
-            if (role !== 'superAdmin') {
-                q = query(q, where('userId', '==', userId));
-            }
-            q = query(q, startAfter(lastDoc), limit(15));
+            const q = query(collection(db, `companies/${companyId}/projects`), startAfter(lastDoc), limit(50));
 
             const snapshot = await getDocs(q);
             const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Project));
@@ -97,8 +91,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             set(state => ({ 
                 projects: [...state.projects, ...loaded], 
                 lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : state.lastDoc,
-                hasMore: snapshot.docs.length === 15,
-                loadingMore: false 
+                hasMore: snapshot.docs.length === 50,
+                loadingMore: false
             }));
         } catch (error) {
             ErrorService.handleError(error, 'Load More Projects');

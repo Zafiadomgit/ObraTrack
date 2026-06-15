@@ -43,6 +43,13 @@ service cloud.firestore {
       // Own doc is always readable by its owner.
       allow get: if isAuth() && request.auth.uid == userId;
 
+      // Any approved member of the same company can read the company roster
+      // (id + role + name). Needed so each role can resolve who is at/below
+      // their rank for the data-visibility hierarchy.
+      allow read: if isAuth()
+        && resource.data.companyId == callerData().companyId
+        && callerData().status == 'approved';
+
       // Admin of same company can read all members.
       allow read: if isAuth()
         && callerData().role == 'admin'

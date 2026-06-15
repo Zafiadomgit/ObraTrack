@@ -9,6 +9,7 @@ import { useMaterialStore } from '../../materials/store/materialStore';
 import { pdfService } from '../services/pdfService';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import ScreenHeader from '../../../components/ScreenHeader';
+import { useVisibleUsers } from '../../../core/hooks/useVisibleUsers';
 import { useSubscription } from '../../auth/hooks/useSubscription';
 import Icon from '@expo/vector-icons/Feather';
 import { format, subDays, addDays, isSameDay } from 'date-fns';
@@ -21,10 +22,11 @@ export default function ReportsScreen() {
     const route = useRoute<any>();
     const { projectId } = route.params ?? {};
     const { user } = useAppStore();
-    const project = useProjectStore(state => state.projects).find(p => p.id === projectId && p.userId === user?.id);
-    const dailyLogs = useReportStore(state => state.dailyLogs).filter(l => l.projectId === projectId && l.userId === user?.id);
-    const workers = usePersonnelStore(state => state.workers).filter(w => w.projectId === projectId && w.userId === user?.id);
-    const materials = useMaterialStore(state => state.materials).filter(m => m.projectId === projectId && m.userId === user?.id);
+    const { canSee } = useVisibleUsers();
+    const project = useProjectStore(state => state.projects).find(p => p.id === projectId && canSee(p.userId));
+    const dailyLogs = useReportStore(state => state.dailyLogs).filter(l => l.projectId === projectId && canSee(l.userId));
+    const workers = usePersonnelStore(state => state.workers).filter(w => w.projectId === projectId && canSee(w.userId));
+    const materials = useMaterialStore(state => state.materials).filter(m => m.projectId === projectId && canSee(m.userId));
 
     // In a real scenario we'd query history. Let's mock a simple history or empty state.
     const [history] = useState([

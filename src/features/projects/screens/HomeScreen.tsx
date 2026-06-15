@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../../../store/appStore';
 import { useProjectStore, Project } from '../store/projectStore';
+import { useVisibleUsers } from '../../../core/hooks/useVisibleUsers';
 import { useMaterialStore } from '../../materials/store/materialStore';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import { isValidDateString } from '../../../core/utils/formatters';
@@ -65,8 +66,8 @@ export default function HomeScreen({ navigation: propNavigation }: any) {
     const { user } = useAppStore();
     const companyId = user?.companyId || 'default-company';
     const allProjects = useProjectStore(state => state.projects);
-    const isAdminOrCoord = user?.role === 'admin' || user?.role === 'coordinador';
-    const projects = isAdminOrCoord ? allProjects : allProjects.filter(p => p.userId === user?.id || p.collaborators?.includes(user?.id!));
+    const { canSee } = useVisibleUsers();
+    const projects = allProjects.filter(p => canSee(p.userId) || p.collaborators?.includes(user?.id!));
     const addProject = useProjectStore(state => state.addProject);
     const deleteProject = useProjectStore(state => state.deleteProject);
     const addMaterial = useMaterialStore(state => state.addMaterial);

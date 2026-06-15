@@ -50,6 +50,8 @@ import { useMaterialStore } from './src/features/materials/store/materialStore';
 import { useLogisticsStore } from './src/features/logistics/store/logisticsStore';
 import { useEquipmentStore } from './src/features/equipment/store/equipmentStore';
 import { useNotificationStore } from './src/features/notifications/store/notificationStore';
+import { usePersonnelStore } from './src/features/personnel/store/personnelStore';
+import { useCompanyStore } from './src/store/companyStore';
 import OfflineBanner from './src/components/OfflineBanner';
 import { haptic } from './src/core/utils/haptics';
 
@@ -113,6 +115,8 @@ function App() {
   const { subscribeToShipments, unsubscribeFromShipments } = useLogisticsStore();
   const { subscribeToEquipment, unsubscribeFromEquipment } = useEquipmentStore();
   const { subscribeToNotifications, unsubscribeFromNotifications } = useNotificationStore();
+  const { loadPersonnel, clearPersonnel } = usePersonnelStore();
+  const { loadMembers } = useCompanyStore();
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -129,6 +133,8 @@ function App() {
               // Load data stores according to role
               loadProjects(userData.id, compId, userData.role);
               loadMaterials(userData.id, compId, userData.role);
+              loadPersonnel(userData.id, compId, userData.role);
+              loadMembers(compId);
               subscribeToShipments(userData.id, compId, userData.role);
               subscribeToEquipment(userData.id, compId, userData.role);
               subscribeToNotifications(userData.id, compId);
@@ -144,6 +150,7 @@ function App() {
         setUser(null);
         clearProjects();
         clearMaterials();
+        clearPersonnel();
         unsubscribeFromShipments();
         unsubscribeFromEquipment();
         unsubscribeFromNotifications();

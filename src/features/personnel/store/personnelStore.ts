@@ -87,15 +87,10 @@ export const usePersonnelStore = create<PersonnelState>((set, get) => ({
         set({ loadingWorkers: true, hasMoreWorkers: true });
 
         try {
-            let wQuery = collection(db, `companies/${companyId}/workers`) as any;
-            let cQuery = collection(db, `companies/${companyId}/crews`) as any;
-
-            if (role !== 'superAdmin') {
-                wQuery = query(wQuery, where('userId', '==', userId));
-                cQuery = query(cQuery, where('userId', '==', userId));
-            }
-
-            wQuery = query(wQuery, limit(20));
+            // Load the whole company; role visibility is applied client-side
+            // (see useVisibleUsers) so higher roles can see lower roles' records.
+            const cQuery = collection(db, `companies/${companyId}/crews`) as any;
+            const wQuery = query(collection(db, `companies/${companyId}/workers`), limit(50));
 
             // Load crews fully
             const cSnapshot = await getDocs(cQuery);
@@ -109,7 +104,7 @@ export const usePersonnelStore = create<PersonnelState>((set, get) => ({
                 workers: workersLoaded,
                 crews: crewsLoaded,
                 lastWorkerDoc: wSnapshot.docs.length > 0 ? wSnapshot.docs[wSnapshot.docs.length - 1] : null,
-                hasMoreWorkers: wSnapshot.docs.length === 20,
+                hasMoreWorkers: wSnapshot.docs.length === 50,
                 loadingWorkers: false
             });
         } catch (error) {
@@ -125,11 +120,7 @@ export const usePersonnelStore = create<PersonnelState>((set, get) => ({
         set({ loadingMoreWorkers: true });
         
         try {
-            let wQuery = collection(db, `companies/${companyId}/workers`) as any;
-            if (role !== 'superAdmin') {
-                wQuery = query(wQuery, where('userId', '==', userId));
-            }
-            wQuery = query(wQuery, startAfter(lastWorkerDoc), limit(20));
+            const wQuery = query(collection(db, `companies/${companyId}/workers`), startAfter(lastWorkerDoc), limit(50));
             
             const wSnapshot = await getDocs(wQuery);
             const workersLoaded = wSnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Worker));
@@ -137,7 +128,7 @@ export const usePersonnelStore = create<PersonnelState>((set, get) => ({
             set(state => ({
                 workers: [...state.workers, ...workersLoaded],
                 lastWorkerDoc: wSnapshot.docs.length > 0 ? wSnapshot.docs[wSnapshot.docs.length - 1] : state.lastWorkerDoc,
-                hasMoreWorkers: wSnapshot.docs.length === 20,
+                hasMoreWorkers: wSnapshot.docs.length === 50,
                 loadingMoreWorkers: false
             }));
         } catch (error) {

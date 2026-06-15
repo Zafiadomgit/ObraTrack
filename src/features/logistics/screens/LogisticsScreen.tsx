@@ -10,6 +10,8 @@ import { es } from 'date-fns/locale';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import { isValidDateString } from '../../../core/utils/formatters';
 import ScreenHeader from '../../../components/ScreenHeader';
+import { useVisibleUsers } from '../../../core/hooks/useVisibleUsers';
+import { useCompanyStore } from '../../../store/companyStore';
 import { useLogisticsStore, Shipment, ShipmentMaterial } from '../store/logisticsStore';
 import { useAppStore } from '../../../store/appStore';
 import { useProjectStore } from '../../projects/store/projectStore';
@@ -28,6 +30,7 @@ export default function LogisticsScreen() {
     const isTab = !!contextProjectId;
 
     const currentUser = useAppStore(state => state.user);
+    const { canSee } = useVisibleUsers();
     const shipments = useLogisticsStore(state => state.shipments);
     const addShipment = useLogisticsStore(state => state.addShipment);
     const updateShipmentStatus = useLogisticsStore(state => state.updateShipmentStatus);
@@ -37,17 +40,11 @@ export default function LogisticsScreen() {
         currentUser && (p.companyId === currentUser.companyId || p.userId === currentUser.id)
     );
     const addProject = useProjectStore(state => state.addProject);
-    const allMaterials = useMaterialStore(state => state.materials).filter(m => currentUser && m.userId === currentUser.id);
+    const allMaterials = useMaterialStore(state => state.materials).filter(m => canSee(m.userId));
 
-    // Filter shipments for the current user and context project
+    // Filter shipments by role-hierarchy visibility and context project
     const userShipments = shipments.filter(s => {
-        // Admin gets to see everything
-        if (currentUser?.role === 'admin') {
-            if (contextProjectId && s.projectId !== contextProjectId) return false;
-            return true;
-        }
-
-        if (!currentUser || s.userId !== currentUser.id) return false;
+        if (!canSee(s.userId)) return false;
         if (contextProjectId && s.projectId !== contextProjectId) return false;
         return true;
     }).sort((a, b) => b.createdAt - a.createdAt);
@@ -71,6 +68,10 @@ export default function LogisticsScreen() {
     const [conductorOptions, setConductorOptions] = useState<ConductorOption[]>([]);
     const [conductorPickerVisible, setConductorPickerVisible] = useState(false);
     const [selectedConductorId, setSelectedConductorId] = useState('');
+
+    useEffect(() => {
+        if (currentUser?.companyId) useCompanyStore.getState().loadMembers(currentUser.companyId);
+    }, [currentUser?.companyId]);
 
     useEffect(() => {
         // Load all registered conductors

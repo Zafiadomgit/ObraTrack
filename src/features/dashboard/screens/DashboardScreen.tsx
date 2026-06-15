@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useCompanyStore } from '../../../store/companyStore';
+import { useVisibleUsers } from '../../../core/hooks/useVisibleUsers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { haptic } from '../../../core/utils/haptics';
@@ -22,19 +24,34 @@ export default function DashboardScreen({ navigation: propNavigation }: any) {
     const insets = useSafeAreaInsets();
     const user = useAppStore(state => state.user);
     const { logout, deleteOwnAccount } = useAppStore();
+    const { canSee } = useVisibleUsers();
     const allProjects = useProjectStore(state => state.projects);
-    const projects = allProjects.filter(p => p.userId === user?.id);
+    const projects = allProjects.filter(p => canSee(p.userId));
     const allMaterials = useMaterialStore(state => state.materials);
-    const materials = allMaterials.filter(m => m.userId === user?.id);
-    const { crews, addCrew, deleteCrew } = usePersonnelStore();
-    // Filter crews by userId if we add that field later, for now we will assume crews are global per company/device or we can filter them if they have userId:
-    const userCrews = crews.filter(c => !c.userId || c.userId === user?.id);
+    const materials = allMaterials.filter(m => canSee(m.userId));
+    const { crews, addCrew, deleteCrew, loadPersonnel } = usePersonnelStore();
+    const userCrews = crews.filter(c => !c.userId || canSee(c.userId));
 
     const allWorkers = usePersonnelStore(state => state.workers);
-    const workers = allWorkers.filter(w => w.userId === user?.id);
+    const workers = allWorkers.filter(w => canSee(w.userId));
     const allDailyLogs = useReportStore(state => state.dailyLogs);
-    const dailyLogs = allDailyLogs.filter(l => l.userId === user?.id);
+    const dailyLogs = allDailyLogs.filter(l => canSee(l.userId));
     const unreadNotificationsCount = useNotificationStore(state => state.unreadCount);
+    const loadProjects = useProjectStore(state => state.loadProjects);
+    const loadMaterials = useMaterialStore(state => state.loadMaterials);
+
+    // Refresh the company roster and the data the dashboard summarizes whenever
+    // it regains focus, so the counts stay in sync after edits on other screens.
+    useFocusEffect(
+        useCallback(() => {
+            if (!user) return;
+            const companyId = user.companyId || 'default-company';
+            useCompanyStore.getState().loadMembers(companyId);
+            loadPersonnel(user.id, companyId, user.role);
+            loadProjects(user.id, companyId, user.role);
+            loadMaterials(user.id, companyId, user.role);
+        }, [user])
+    );
 
     const [crewModalVisible, setCrewModalVisible] = useState(false);
     const [newCrewName, setNewCrewName] = useState('');

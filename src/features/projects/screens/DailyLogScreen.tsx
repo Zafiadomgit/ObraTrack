@@ -8,6 +8,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import ScreenHeader from '../../../components/ScreenHeader';
+import { useVisibleUsers } from '../../../core/hooks/useVisibleUsers';
+import { useCompanyStore } from '../../../store/companyStore';
 import { collection, query, where, orderBy, limit, getDocs, startAfter, QueryDocumentSnapshot, DocumentData, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { format } from 'date-fns';
@@ -23,10 +25,11 @@ export default function DailyLogScreen() {
     const route = useRoute<any>();
     const { projectId } = route.params ?? {};
     const currentUser = useAppStore(state => state.user);
-    
+    const { canSee } = useVisibleUsers();
+
     // We combine local offline entries from reportStore with fetched Firestore entries
-    const localLogs = useReportStore(state => state.dailyLogs).filter(l => l.projectId === projectId && l.userId === currentUser?.id);
-    const workers = usePersonnelStore(state => state.workers).filter(w => w.projectId === projectId && w.userId === currentUser?.id);
+    const localLogs = useReportStore(state => state.dailyLogs).filter(l => l.projectId === projectId && canSee(l.userId));
+    const workers = usePersonnelStore(state => state.workers).filter(w => w.projectId === projectId && canSee(w.userId));
     
     const addLog = useReportStore(state => state.addLog);
     const updateLog = useReportStore(state => state.updateLog);
@@ -38,6 +41,7 @@ export default function DailyLogScreen() {
 
     React.useEffect(() => {
         loadLogs();
+        if (currentUser?.companyId) useCompanyStore.getState().loadMembers(currentUser.companyId);
     }, [projectId, currentUser?.companyId]);
 
     const loadLogs = async (isLoadMore = false) => {
@@ -96,7 +100,7 @@ export default function DailyLogScreen() {
     const logsMap = new Map<string, DailyLog>();
     firestoreLogs.forEach(l => logsMap.set(l.id, l));
     localLogs.forEach(l => logsMap.set(l.id, l)); // Local overrides if same ID (pending sync)
-    const logs = Array.from(logsMap.values()).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    const logs = Array.from(logsMap.values()).filter(l => canSee(l.userId)).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
     const [modalVisible, setModalVisible] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);

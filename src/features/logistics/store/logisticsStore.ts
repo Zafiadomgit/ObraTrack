@@ -59,14 +59,13 @@ export const useLogisticsStore = create<LogisticsState>((set, get) => ({
 
         let q;
         const basePath = `companies/${companyId}/shipments`;
-        if (role === 'superAdmin' || role === 'admin' || role === 'coordinador' || role === 'logistica') {
-            q = (role === 'superAdmin' || role === 'admin')
-                ? collection(db, basePath)
-                : query(collection(db, basePath), where('userId', '==', userId));
-        } else if (role === 'conductor') {
+        if (role === 'conductor') {
+            // Drivers only see the trips assigned to them.
             q = query(collection(db, basePath), where('conductorId', '==', userId));
         } else {
-            q = query(collection(db, basePath), where('userId', '==', userId));
+            // Everyone else loads the whole company; role visibility is applied
+            // client-side (see useVisibleUsers).
+            q = collection(db, basePath);
         }
 
         unsubLogistics = onSnapshot(q, (snapshot) => {

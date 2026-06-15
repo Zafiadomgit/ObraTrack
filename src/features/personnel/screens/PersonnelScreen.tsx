@@ -7,6 +7,8 @@ import { useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePersonnelStore, Worker, MemberRole } from '../store/personnelStore';
 import { useAppStore } from '../../../store/appStore';
+import { useCompanyStore } from '../../../store/companyStore';
+import { useVisibleUsers } from '../../../core/hooks/useVisibleUsers';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../core/theme';
 import Icon from '@expo/vector-icons/Feather';
 import { format } from 'date-fns';
@@ -36,13 +38,15 @@ export default function PersonnelScreen() {
     const isGlobal = projectId === 'all';
     const currentUser = useAppStore(state => state.user);
     const { addWorker, updateWorker, deleteWorker, registrarDia, quitarDia, addCrewToProject, loadPersonnel } = usePersonnelStore();
-    const allWorkers = usePersonnelStore(state => state.workers).filter(w => w.userId === currentUser?.id || currentUser?.role === 'admin');
-    const crews = usePersonnelStore(state => state.crews).filter(c => !c.userId || c.userId === currentUser?.id || currentUser?.role === 'admin');
+    const { canSee } = useVisibleUsers();
+    const allWorkers = usePersonnelStore(state => state.workers).filter(w => canSee(w.userId));
+    const crews = usePersonnelStore(state => state.crews).filter(c => !c.userId || canSee(c.userId));
 
     React.useEffect(() => {
         if (currentUser) {
             const companyId = currentUser.companyId || 'default-company';
             loadPersonnel(currentUser.id, companyId, currentUser.role);
+            useCompanyStore.getState().loadMembers(companyId);
         }
     }, [currentUser]);
 

@@ -45,10 +45,9 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
 
     subscribeToEquipment: (userId, companyId, role) => {
         if (unsubEquipment) unsubEquipment();
+        // Load the whole company; role visibility is applied client-side.
         const basePath = `companies/${companyId}/equipment`;
-        const q = (role === 'superAdmin' || role === 'admin')
-            ? collection(db, basePath)
-            : query(collection(db, basePath), where('userId', '==', userId));
+        const q = collection(db, basePath);
 
         unsubEquipment = onSnapshot(q, (snapshot) => {
             const loaded = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Equipment));

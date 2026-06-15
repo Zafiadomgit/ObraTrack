@@ -92,20 +92,17 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
         set({ loading: true, hasMore: true });
 
         try {
-            let q = collection(db, `companies/${companyId}/materials`) as any;
-            if (role !== 'superAdmin') {
-                q = query(q, where('userId', '==', userId));
-            }
-            q = query(q, limit(15)); // Basic limit, relying on ID sort for now
+            // Load the whole company; role visibility is applied client-side.
+            const q = query(collection(db, `companies/${companyId}/materials`), limit(50));
 
             const snapshot = await getDocs(q);
             const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Material));
-            
-            set({ 
-                materials: loaded, 
+
+            set({
+                materials: loaded,
                 lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
-                hasMore: snapshot.docs.length === 15,
-                loading: false 
+                hasMore: snapshot.docs.length === 50,
+                loading: false
             });
         } catch (error) {
             ErrorService.handleError(error, 'Load Materials');
@@ -120,11 +117,7 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
         set({ loadingMore: true });
 
         try {
-            let q = collection(db, `companies/${companyId}/materials`) as any;
-            if (role !== 'superAdmin') {
-                q = query(q, where('userId', '==', userId));
-            }
-            q = query(q, startAfter(lastDoc), limit(15));
+            const q = query(collection(db, `companies/${companyId}/materials`), startAfter(lastDoc), limit(50));
 
             const snapshot = await getDocs(q);
             const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Material));
@@ -132,8 +125,8 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
             set(state => ({ 
                 materials: [...state.materials, ...loaded], 
                 lastDoc: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : state.lastDoc,
-                hasMore: snapshot.docs.length === 15,
-                loadingMore: false 
+                hasMore: snapshot.docs.length === 50,
+                loadingMore: false
             }));
         } catch (error) {
             ErrorService.handleError(error, 'Load More Materials');
